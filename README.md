@@ -1,5 +1,5 @@
 # getGeneInfo
-perl script to retrieve various info form a list of HGNC genes, including exon coordinates or domain details.
+Perl script to retrieve various info form a list of HGNC genes, including exon coordinates or domain details.
 In particular generates a BED that can be use to design NGS experiences.
 
 ## Installation
@@ -32,3 +32,43 @@ Or by running the query_biomart.pl file ;before running the script you need to i
 
 * optionnally you woud need [bedtools](http://bedtools.readthedocs.io/en/latest/) installed in your path (default /usr/local/bin, can be modified at the beginning of the script, line $BEDTOOLS = '/usr/local/bin/bedtools')
 bedtools is used to merge the bed output with all exons positions.
+
+## How to run
+
+Once you have your files in the 'data' directory and the UCSC liftover for your system working in the 'liftover' directory, plus an active internet connection, you can run the script with:
+
+```bash
+perl getGeneInfo.pl -l GENE_LIST.txt -g hg19 -o 50 -n
+```
+
+with gene_list.txt being a text file with HGNC gene names to process:
+
+USH2A
+CLRN1
+CFTR
+..
+
+the -g option is to fill with hg19 or hg38 human genome assemblies
+
+the -o option defines an offset to be applied to each exon of the genes, if you want a bed with exons +/- 50 intronic base pairs for NGS designs, for example
+
+and the -n option makes the script run even for genes for which the NCBI has no NG_... accesson number.
+
+Another -s option will build sql files ready to be inserted in our in house database system.
+
+If the script encounters critical errors for a gene, this gene will be reported in an gene_list_error.txt file (e.g. when networking issues) which can be used to rerun the script.
+
+
+## What you will get
+
+Several files in the 'results' directory. GENE_LIST is the name of the file and GENOME the version you provided as input.
+
+* a GENE_LIST_info.txt file which will contain info on accession numbers (NCBI, Ensembl...), exon genomic locations, protein domains for each RefSeq isiform
+
+* a GENE_LIST_LOVD_domains.txt will contain a summary of the Uniprot protein domains, which can be used in LOVD systems to create menus
+
+* a GENE_LIST_exons_GENOME.sorted.merged.bed, is the bed file that you can load in (UCSC genome browser)[https://www.genome.ucsc.edu/] for example, or send to your NGS probes provider.
+
+* a GENE_LIST_error.txt listing the genes for which the program had serious errors
+
+* optionally a genes_SQL.sql file you probably don't need
