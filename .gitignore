@@ -1,0 +1,8 @@
+INSTALL.txt
+useless/
+tmp/*
+results/*
+genes.txt
+test.txt
+liftover/*
+data/*
