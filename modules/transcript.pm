@@ -1,5 +1,5 @@
 package transcript;
-sub strict;
+use strict;
 
 
 

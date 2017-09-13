@@ -1,5 +1,5 @@
 package segment;
-sub strict;
+use strict;
 
 sub new {
 	my ($class, $nm, $gene) = @_;
