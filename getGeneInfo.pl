@@ -300,8 +300,9 @@ sub populate {
 									my $segment = segment->new($content[$nm], $gene_name);
 									if ($k == 0) {
 										#UTR5-exon1
-										$segment->setType('UTR5');
+										$segment->setType('5UTR');
 										$segment->setNumber('-1');
+										$segment->setName('5UTR');
 										if ($strand eq '+') {
 											$segment->setStartG($start-2001);
 											$segment->setEndG($start-1);
@@ -328,8 +329,9 @@ sub populate {
 									}
 									elsif ($k == $transcript->getNbExons()) {
 										#UTR3
-										$segment->setType('UTR3');
+										$segment->setType('3UTR');
 										$segment->setNumber($transcript->getNbExons()+1);
+										$segment->setName('3UTR');
 										if ($strand eq '+') {
 											$segment->setStartG($prev+1);
 											$segment->setEndG($prev+2001);
