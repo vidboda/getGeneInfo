@@ -117,7 +117,7 @@ sub getHGNC {my $self = shift;return $self->{hgnc}}
 
 sub toPrint {
 	my $self = shift;
-	my $txt =  "#Gene\tNM\tENST\tENSP\tHGNC\tUNIPROT\tNMVersion\tNG\tNP\tMainIsoform\tChr\tStrand\t#Exons\tTssPos\tpName\tpShort\tpSize\n";
+	my $txt =  "#Gene\tSecondName\tNM\tENST\tENSP\tHGNC\tUNIPROT\tNMVersion\tNG\tNP\tMainIsoform\tChr\tStrand\t#Exons\tTssPos\tpName\tpShort\tpSize\n";
 	$txt .= $self->getGeneName()."\t".$self->getSecondName()."\t".$self->getNM()."\t".$self->getENST()."\t".$self->getENSP()."\t".$self->getHGNC()."\t".$self->getUniprot()."\t".$self->getNMVersion()."\t".$self->getNG()."\t".$self->getNP()."\t".$self->getMain()."\t".$self->getChr()."\t".$self->getStrand()."\t".$self->getNbExons()."\t".$self->getTss()."\t".$self->getProtName()."\t".$self->getShortProt()."\t".$self->getProtSize()."\n";
 	return $txt;
 }

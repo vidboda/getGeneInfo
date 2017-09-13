@@ -358,13 +358,13 @@ sub populate {
 											$segment->setSize($end-$start+1);
 											$segment_intron->setStartG($prev+1);
 											$segment_intron->setEndG($segment->getStartG()-1);
-											$segment_intron->setSize($segment->getEndG()-$prev+1+1);
+											$segment_intron->setSize($segment->getEndG()-$prev+1);
 										}
 										else {
 											$segment->setSize($start-$end+1);
 											$segment_intron->setStartG($prev-1);
 											$segment_intron->setEndG($segment->getStartG()+1);
-											$segment_intron->setSize($prev-$segment->getStartG());
+											$segment_intron->setSize($prev-1-$segment->getStartG());
 										}
 										#liftover $segment_intron if hg19
 										if ($genome eq 'hg19') {&liftover($transcript->getChr(),$segment_intron->getStartG(), $segment_intron->getEndG(), $strand, $segment_intron)}
