@@ -3,6 +3,7 @@
 use strict;
 use Getopt::Std;
 use REST::Client;
+use Net::Ping;
 #use LWP::UserAgent;
 #use modules::list;
 use modules::transcript;
@@ -46,6 +47,10 @@ else {'die no liftover chain, you should download one at UCSC http://hgdownload.
 
 my $BEDTOOLS = '/usr/local/bin/bedtools';
 if (!-f $BEDTOOLS) {undef $BEDTOOLS}
+
+#check togows.org availability
+my $p = Net::Ping->new();
+if (!defined($p->ping("togows.org", 1))) {die "\n togows.org is not reachable, please check your internet connection\n"}
 
 my (%opts, $list, $genome, $offset, @transcript, %transcript_hash, %segment_hash, %domain_hash, %uniprot_hash);#, $gene, $segment, $domaine);
 getopts('snl:g:o:', \%opts);
@@ -453,7 +458,7 @@ sub main {
 }
 
 sub HELP_MESSAGE {
-	print "\nUsage: perl -T  auto_gene_u2.pl -l path/to/annotated/hgnc_gene_list.txt -g genome_version \nSupports --help or --version\n\n
+	print "\nUsage: perl -T  getGeneInfo.pl -l path/to/annotated/hgnc_gene_list.txt -g genome_version \nSupports --help or --version\n\n
 ### This script retrieves various information about a list of genes provided as input
 ### -l txt file, gene list HGNC approved
 ### -g genome version, hg19/hg38
