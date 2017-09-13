@@ -72,3 +72,9 @@ Several files in the 'results' directory. GENE_LIST is the name of the file and 
 * a GENE_LIST_error.txt listing the genes for which the program had serious errors
 
 * optionally a genes_SQL.sql file you probably don't need
+
+## Credits
+
+This script uses togoWS web services, http://togows.org/
+
+Toshiaki Katayama, Mitsuteru Nakao and Toshihisa Takagi: TogoWS: integrated SOAP and REST APIs for interoperable bioinformatics Web services. Nucleic Acids Research 2010, 38:W706-W711. doi:10.1093/nar/gkq386, PMID:20472643 (NAR Web Server Issue 2010)
