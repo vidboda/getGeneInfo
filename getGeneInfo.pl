@@ -68,13 +68,13 @@ else {$offset = 0}
 #open E, ">".$list."_error.txt";
 #close E;
 
-&populate($list);
+&populate();
 &main();
 
 exit;
 
 sub populate {
-	my $list = shift;
+	#my $list = shift;
 	open F, "$list.txt" or die $!;
 	#my ($i, $j) = (0, 0);
 	my @genes;
