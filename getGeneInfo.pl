@@ -460,7 +460,7 @@ sub main {
 }
 
 sub HELP_MESSAGE {
-	print "\nUsage: perl -T  getGeneInfo.pl -l path/to/annotated/hgnc_gene_list.txt -g genome_version \nSupports --help or --version\n\n
+	print "\nUsage: perl getGeneInfo.pl -l path/to/annotated/hgnc_gene_list.txt -g genome_version \nSupports --help or --version\n\n
 ### This script retrieves various information about a list of genes provided as input
 ### -l txt file, gene list HGNC approved
 ### -g genome version, hg19/hg38
