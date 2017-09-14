@@ -467,7 +467,7 @@ sub HELP_MESSAGE {
 ### -n considers genes without NCBI NG accession number
 ### -o offset supplementary region to be applied to BED file (numerical, in bp)
 ### -s generates SQL files for USHVaM2 (https://neuro-2.iurc.montp.inserm.fr/usher), hg19 only
-### see INSTALL.txt for installation instructions
+### see README.md for installation instructions
 ### contact: david.baux\@inserm.fr\n\n"
 }
 
