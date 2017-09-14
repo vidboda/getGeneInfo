@@ -59,7 +59,7 @@ if ((not exists $opts{'l'}) || ($opts{'l'} !~ /\.txt$/o) || (not exists $opts{'g
 	&HELP_MESSAGE();
 	exit
 }
-if ($opts{'l'} =~ /[\/]*(.+)\.txt$/o) {$list = $1} #get file path and prefix
+if ($opts{'l'} =~ /([^\/]+)\.txt$/o) {$list = $1} #get file path and prefix
 if ($opts{'g'} =~ /hg(19|38)/) {$genome = "hg$1"}
 if ($opts{'o'} && $opts{'o'} =~ /(\d+)/o) {$offset = $1}
 else {$offset = 0}
