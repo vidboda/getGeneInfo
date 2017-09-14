@@ -1,5 +1,6 @@
 package segment;
 use strict;
+use REST::Client;
 
 sub new {
 	my ($class, $nm, $gene) = @_;
