@@ -4,8 +4,7 @@ use strict;
 use Getopt::Std;
 use REST::Client;
 use Net::Ping;
-#use LWP::UserAgent;
-#use modules::list;
+use File::Basename;
 use modules::transcript;
 use modules::segment;
 use modules::domain;
@@ -52,15 +51,17 @@ if (!-f $BEDTOOLS) {undef $BEDTOOLS}
 my $p = Net::Ping->new();
 if (!defined($p->ping("togows.org", 1))) {die "\n togows.org is not reachable, please check your internet connection\n"}
 
-my (%opts, $list, $path, $genome, $offset, @transcript, %transcript_hash, %segment_hash, %domain_hash, %uniprot_hash);#, $gene, $segment, $domaine);
+my (%opts, $filename, $path, $genome, $offset, @transcript, %transcript_hash, %segment_hash, %domain_hash, %uniprot_hash);#, $gene, $segment, $domaine);
 getopts('snl:g:o:', \%opts);
 
 if ((not exists $opts{'l'}) || ($opts{'l'} !~ /\.txt$/o) || (not exists $opts{'g'})  || $opts{'g'} !~ /hg(19|38)$/o) {
 	&HELP_MESSAGE();
 	exit
 }
-if ($opts{'l'} =~ /(.+)([^\/]+)\.txt$/o) {$path = $1.$2; $list = $2} #get file path and prefix
-elsif ($opts{'l'} =~ /([^\/]+)\.txt$/o) {$list = $1; $path = $1}
+
+if ($opts{'l'}) {($filename, $path) = fileparse($opts{'l'}, qr/\.[^.]*/)}
+#if ($opts{'l'} =~ /^(.+)([^\/]+)\.txt$/o) {$list = $2;$path = $1.$list} #get file path and prefix
+#elsif ($opts{'l'} =~ /^([^\/]+)\.txt$/o) {$list = $1; $path = $list}
 if ($opts{'g'} =~ /hg(19|38)/) {$genome = "hg$1"}
 if ($opts{'o'} && $opts{'o'} =~ /(\d+)/o) {$offset = $1}
 else {$offset = 0}
@@ -76,7 +77,7 @@ exit;
 
 sub populate {
 	#my $list = shift;
-	open F, "$path.txt" or die $!;
+	open F, $path.$filename.'.txt' or die $!;
 	#my ($i, $j) = (0, 0);
 	my @genes;
 	print "\nGenome: $genome\n";
@@ -411,10 +412,10 @@ sub populate {
 }
 
 sub main {
-	open LOVD, '>results/'.$list.'_LOVD_domains.txt';
-	open BED, '>results/'.$list."_exons_$genome.bed";
-	open INFO, '>results/'.$list.'_info.txt';
-	if ($genome eq 'hg19' && $opts{'s'}) {open SQL, '>results/'.$list.'_SQL.sql'}
+	open LOVD, '>results/'.$filename.'_LOVD_domains.txt';
+	open BED, '>results/'.$filename."_exons_$genome.bed";
+	open INFO, '>results/'.$filename.'_info.txt';
+	if ($genome eq 'hg19' && $opts{'s'}) {open SQL, '>results/'.$filename.'_SQL.sql'}
 	elsif ($opts{'s'}) {print "\nIgnoring SQL option -s in non hg19 context\n"}
 	foreach my $key (sort keys %transcript_hash) {	
 	#foreach my $obj (@transcript) {
@@ -450,7 +451,7 @@ sub main {
 	if ($genome eq 'hg19' && $opts{'s'}) {close SQL}
 	#bedtools to merge intervals
 	if ($BEDTOOLS) {
-		my $bed = 'results/'.$list."_exons_$genome";
+		my $bed = 'results/'.$filename."_exons_$genome";
 		system "sort -k1,1 -k2,2n $bed.bed > $bed.sorted.bed; $BEDTOOLS merge -i $bed.sorted.bed -c 4,5,6 -o collapse,distinct,distinct > $bed.sorted.merged.bed";
 		unlink "$bed.bed", "$bed.sorted.bed";
 	}
@@ -476,7 +477,7 @@ sub VERSION_MESSAGE {
 
 sub error {
 	my $gene = shift;
-	open E, ">>results/".$list."_error.txt";
+	open E, ">>results/".$filename."_error.txt";
 	print E "$gene\n";
 	#print E "No match for $gene (no UNIPROT)\n";
 	close E;
