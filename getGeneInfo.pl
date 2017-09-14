@@ -52,14 +52,15 @@ if (!-f $BEDTOOLS) {undef $BEDTOOLS}
 my $p = Net::Ping->new();
 if (!defined($p->ping("togows.org", 1))) {die "\n togows.org is not reachable, please check your internet connection\n"}
 
-my (%opts, $list, $genome, $offset, @transcript, %transcript_hash, %segment_hash, %domain_hash, %uniprot_hash);#, $gene, $segment, $domaine);
+my (%opts, $list, $path, $genome, $offset, @transcript, %transcript_hash, %segment_hash, %domain_hash, %uniprot_hash);#, $gene, $segment, $domaine);
 getopts('snl:g:o:', \%opts);
 
 if ((not exists $opts{'l'}) || ($opts{'l'} !~ /\.txt$/o) || (not exists $opts{'g'})  || $opts{'g'} !~ /hg(19|38)$/o) {
 	&HELP_MESSAGE();
 	exit
 }
-if ($opts{'l'} =~ /([^\/]+)\.txt$/o) {$list = $1} #get file path and prefix
+if ($opts{'l'} =~ /(.+)([^\/]+)\.txt$/o) {$path = $1.$2; $list = $2} #get file path and prefix
+elsif ($opts{'l'} =~ /([^\/]+)\.txt$/o) {$list = $1; $path = $1}
 if ($opts{'g'} =~ /hg(19|38)/) {$genome = "hg$1"}
 if ($opts{'o'} && $opts{'o'} =~ /(\d+)/o) {$offset = $1}
 else {$offset = 0}
@@ -75,7 +76,7 @@ exit;
 
 sub populate {
 	#my $list = shift;
-	open F, "$list.txt" or die $!;
+	open F, "$path.txt" or die $!;
 	#my ($i, $j) = (0, 0);
 	my @genes;
 	print "\nGenome: $genome\n";
