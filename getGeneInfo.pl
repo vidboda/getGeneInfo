@@ -187,7 +187,7 @@ sub populate {
 										
 									}
 								}
-								if(($transcript->getProtName()))  {$transcript->setProtName(ucfirst(lc($transcript->getGeneName())))}
+								if((!$transcript->getProtName()))  {$transcript->setProtName(ucfirst(lc($transcript->getGeneName())))}
 								$domain_hash{"$gene_name-$content[$nm]"} = \@domains;
 							}
 							else {
@@ -423,6 +423,7 @@ sub main {
 	open BED, '>results/'.$filename."_exons_$genome.bed";
 	open INFO, '>results/'.$filename.'_info.txt';
 	open SUMMARY, '>results/'.$filename.'_summary.txt';
+	print SUMMARY "Gene-RefSeq\tMain Isoform\n";
 	if ($genome eq 'hg19' && $opts{'s'}) {open SQL, '>results/'.$filename.'_SQL.sql'}
 	elsif ($opts{'s'}) {print "\nIgnoring SQL option -s in non hg19 context\n"}
 	foreach my $key (sort keys %transcript_hash) {	
