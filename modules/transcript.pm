@@ -13,6 +13,7 @@ sub new { #constructeur
         else {
 		$self = {
                         'nm' => $nm,
+			'second_name' => 'NULL',
 			'ng' => 'NG_000000.0',
 			'np' => 'NP_000000.0',
 			'nm_version' => '1',

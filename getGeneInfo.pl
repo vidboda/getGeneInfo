@@ -43,6 +43,8 @@ if (-f 'liftover/liftOver_i386') {$LIFTOVER = 'liftover/liftOver_i386'}
 else {'die no liftover binary, you should download one for your system at UCSC http://hgdownload.soe.ucsc.edu/admin/exe/'}
 if (-f 'liftover/hg19ToHg38.over.chain.gz') {$LIFTOVER_CHAIN = 'liftover/hg19ToHg38.over.chain.gz'}
 else {'die no liftover chain, you should download one at UCSC http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz'}
+if (! -d 'results') {mkdir('results', '0755')}
+if (! -d 'tmp') {mkdir('tmp', '0755')}
 
 my $BEDTOOLS = '/usr/local/bin/bedtools';
 if (!-f $BEDTOOLS) {undef $BEDTOOLS}
@@ -123,9 +125,13 @@ sub populate {
 							if ($content[$hgnc] =~ /HGNC:(\d+)/o) {
 								$transcript->setHGNC($1);
 								my @hgnc_data = split(/\t/, `grep '$content[$hgnc]' $HGNC_FILE`);
-								if (length $hgnc_data[8] < 21) {$transcript->setSecondName($hgnc_data[8])}
-								else {$transcript->setSecondName(substr($hgnc_data[8], 0, 20))}
-								#print $hgnc_data[8]."\n";
+								if ($hgnc_data[8]) {
+									$hgnc_data[8] =~ s/"//g;
+									if ($hgnc_data[8] =~ /([\w-]+)|/o) {$hgnc_data[8] = $1}
+									#print $hgnc_data[8];
+									if (length $hgnc_data[8] < 21) {$transcript->setSecondName($hgnc_data[8])}
+									else {$transcript->setSecondName(substr($hgnc_data[8], 0, 20))}
+								}								
 							}
 						}					
 						$transcript->setGeneName($content[$name]);
@@ -135,18 +141,18 @@ sub populate {
 							$transcript->setUniprot($content[$uniprot]);
 							#get info from UNIPROT and create domain objs
 							#my $response = $ua->get('http://www.uniprot.org/uniprot/'.$transcript->getUniprot().'.txt');
-							my $uniprot_client = REST::Client->new(timeout => 10);
+							
 							my (@domains, $data);
 							if (! defined($uniprot_hash{$transcript->getUniprot()})) {
 								my $uniprot_code = $transcript->getUniprot();
 								#my $data = `wget http://www.uniprot.org/uniprot/$uniprot_code.txt`;
-								
+								my $uniprot_client = REST::Client->new(timeout => 10);
 								my $response = $uniprot_client->GET('http://www.uniprot.org/uniprot/'.$transcript->getUniprot().'.txt');
 								if ($uniprot_client->responseCode() == 200) {
 								#if ($response->is_success()) {
 									#print $response->decoded_content;  # or whatever
 									#my $data = $response->decoded_content();
-									my $data = $uniprot_client->responseContent();
+									$data = $uniprot_client->responseContent();
 									$uniprot_hash{$transcript->getUniprot()} = $data;
 									
 								}
@@ -160,14 +166,14 @@ sub populate {
 								my @uniprot = split(/\n/, $data);
 								foreach (@uniprot) {
 									if (/^ID\s+\w+\s+\w+\;\s+(\d+)\sAA\./o) {$transcript->setProtSize($1)}
-									elsif (/^DE\s+RecName:\sFull=(.+)[\;\(\{]/o) {$transcript->setProtName($1);$transcript->setShortProt(ucfirst(lc($transcript->getGeneName())))}
+									elsif (/^DE\s+RecName:\sFull=([\w\s,\/'-]+)[\;\(\{]/o) {$transcript->setProtName($1);$transcript->setShortProt(ucfirst(lc($transcript->getGeneName())))}
 									elsif (/^FT\s+(DOMAIN|MOTIF|TRANSMEM|SIGNAL|TOPO_DOM|REGION|COMPBIAS|REPEAT|COILED)\s+(\d+)\s+(\d+)\s+(.+)\./o) {
 										my ($type, $start_aa, $end_aa, $dom_name) = ($1, $2, $3, $4);
 										if ($start_aa <= $transcript->getProtSize() || $end_aa <= $transcript->getProtSize()) {
 											if ($type eq 'SIGNAL') {$dom_name = lc($type);$dom_name = ucfirst($dom_name)." peptide";}
 											elsif ($type eq 'TRANSMEM') {$dom_name = lc($type)."brane";$dom_name = ucfirst($dom_name);}
-											elsif ($type eq 'COILED') {$dom_name = ucfirst($dom_name)}
-											elsif ($type eq 'TOPO_DOM') {
+											elsif ($type eq 'COILED') {$dom_name = 'Coiled Coil'}
+											elsif ($type eq 'TOPO_DOM' || $type eq 'REGION') {
 												if ($dom_name =~ /(\w+)\.\s\{ECO:\d+\}/o) {$dom_name = $1}
 											}
 											$dom_name =~ s/ \(Potential\)//og;
@@ -181,6 +187,7 @@ sub populate {
 										
 									}
 								}
+								if(($transcript->getProtName()))  {$transcript->setProtName(ucfirst(lc($transcript->getGeneName())))}
 								$domain_hash{"$gene_name-$content[$nm]"} = \@domains;
 							}
 							else {
@@ -415,6 +422,7 @@ sub main {
 	open LOVD, '>results/'.$filename.'_LOVD_domains.txt';
 	open BED, '>results/'.$filename."_exons_$genome.bed";
 	open INFO, '>results/'.$filename.'_info.txt';
+	open SUMMARY, '>results/'.$filename.'_summary.txt';
 	if ($genome eq 'hg19' && $opts{'s'}) {open SQL, '>results/'.$filename.'_SQL.sql'}
 	elsif ($opts{'s'}) {print "\nIgnoring SQL option -s in non hg19 context\n"}
 	foreach my $key (sort keys %transcript_hash) {	
@@ -423,6 +431,7 @@ sub main {
 		#my ($gene, $nm) = ($1, $2);
 		my $obj_transcript = $transcript_hash{$key};
 		print INFO "$key\n";
+		print SUMMARY "$key\t".$obj_transcript->getMain()."\n";
 		if ($obj_transcript->getChr()){#if false, rest client failed => the gene is in the error file and needs to be reran
 			print INFO $obj_transcript->toPrint();
 			if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_transcript->toSQL()}
@@ -437,7 +446,7 @@ sub main {
 			}		
 			my $domain_list = $domain_hash{$key};
 			print INFO "#Gene\tNM\tdName\tdStart\tdEnd\n";
-			print LOVD "#".$obj_transcript->getProtName()."\n";
+			print LOVD "#".$obj_transcript->getGeneName()."--".$obj_transcript->getProtName()."\n";
 			foreach my $obj_domain (@{$domain_list}) {
 				print INFO $obj_domain->toPrint();			
 				print LOVD $obj_domain->toLOVD();
@@ -448,6 +457,7 @@ sub main {
 	close LOVD;
 	close BED;
 	close INFO;
+	close SUMMARY;
 	if ($genome eq 'hg19' && $opts{'s'}) {close SQL}
 	#bedtools to merge intervals
 	if ($BEDTOOLS) {
