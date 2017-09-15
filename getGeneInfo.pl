@@ -187,7 +187,7 @@ sub populate {
 										
 									}
 								}
-								if((!$transcript->getProtName()))  {$transcript->setProtName(ucfirst(lc($transcript->getGeneName())))}
+								if((!$transcript->getProtName()))  {$transcript->setProtName(ucfirst(lc($transcript->getGeneName())));$transcript->setShortProt(ucfirst(lc($transcript->getGeneName())));}
 								$domain_hash{"$gene_name-$content[$nm]"} = \@domains;
 							}
 							else {
