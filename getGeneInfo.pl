@@ -67,7 +67,7 @@ if ($opts{'l'}) {($filename, $path) = fileparse($opts{'l'}, qr/\.[^.]*/)}
 if ($opts{'g'} =~ /hg(19|38)/) {$genome = "hg$1"}
 if ($opts{'o'} && $opts{'o'} =~ /(\d+)/o) {$offset = $1}
 else {$offset = 0}
-
+my $gene_counter = 0;
 #prepare error file
 #open E, ">".$list."_error.txt";
 #close E;
@@ -79,7 +79,6 @@ else {$offset = 0}
 exit;
 
 sub populate {
-	my $gene_counter = 0;
 	open F, $path.$filename.'.txt' or die $!;
 	#my ($i, $j) = (0, 0);
 	my @genes;
@@ -92,10 +91,18 @@ sub populate {
 		#if (/(\w+)/o) {push @genes, $1}	
 		chomp($gene_name);
 		if ($gene_name =~ /(\w+)/o) {
-			
 			###Todo check HGNC ok
-			print "Treating $gene_name...";
+			my $valid_hgnc = 0;
+			open H, "<$HGNC_FILE" or die "Can't find $HGNC_FILE which is supposed to be the HGNC file\n";
+			while (<H>) {
+				#print $_;
+				#print "\n".(split(/\t/, $_))[1]."\n";
+				if ($gene_name eq (split(/\t/, $_))[1]) {$valid_hgnc = 1;last;}}
+			close H;
+			if ($valid_hgnc != 1) {print "\n$gene_name is not a valid HGNC name. Please check and resubmit\n";&error($gene_name);next;}
 			
+			print "Treating $gene_name...";
+			$gene_counter++;
 			#my $gene_name = $_;
 			my ($i, $j, $enst, $ensp, $nm, $hgnc, $uniprot, $name) = (0, 0, 0, 0, 0, 0, 0, 0);
 			open G, "$MART" or die $!; #first file biomart file for NM, ENST, ENSP, UNIPROT, HGNC
@@ -125,7 +132,7 @@ sub populate {
 						if ($content[$hgnc] ne '') {
 							if ($content[$hgnc] =~ /HGNC:(\d+)/o) {
 								$transcript->setHGNC($1);
-								my @hgnc_data = split(/\t/, `grep '$content[$hgnc]' $HGNC_FILE`);
+								my @hgnc_data = split(/\t/, `grep "$content[$hgnc]" $HGNC_FILE`);
 								if ($hgnc_data[8]) {
 									$hgnc_data[8] =~ s/"//g;
 									if ($hgnc_data[8] =~ /([\w-]+)|/o) {$hgnc_data[8] = $1}
@@ -470,7 +477,7 @@ sub main {
 		system "sort -k1,1 -k2,2n $bed.bed > $bed.sorted.bed; $BEDTOOLS merge -i $bed.sorted.bed -header -c 4,5,6 -o collapse,distinct,distinct > $bed.sorted.merged.bed";
 		unlink "$bed.bed", "$bed.sorted.bed";
 	}
-	print "\n\n$isoform_counter isoforms treated\n\n";
+	print "\n\n$gene_counter genes and $isoform_counter isoforms treated\n\n";
 	#foreach (@{$test}) {print "$_\n"}
 }
 
