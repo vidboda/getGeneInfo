@@ -72,13 +72,14 @@ else {$offset = 0}
 #open E, ">".$list."_error.txt";
 #close E;
 
+
 &populate();
 &main();
 
 exit;
 
 sub populate {
-	#my $list = shift;
+	my $gene_counter = 0;
 	open F, $path.$filename.'.txt' or die $!;
 	#my ($i, $j) = (0, 0);
 	my @genes;
@@ -419,20 +420,23 @@ sub populate {
 }
 
 sub main {
+	my $isoform_counter = 0;
 	open LOVD, '>results/'.$filename.'_LOVD_domains.txt';
 	open BED, '>results/'.$filename."_exons_$genome.bed";
+	print BED "track name=$genome.$filename description=\"RefSeq exons with offset $offset of User supplied gene list\"\n";
 	open INFO, '>results/'.$filename.'_info.txt';
 	open SUMMARY, '>results/'.$filename.'_summary.txt';
-	print SUMMARY "Gene-RefSeq\tMain Isoform\n";
+	print SUMMARY "Gene-RefSeq\tNG AccNo\tMain Isoform\n";
 	if ($genome eq 'hg19' && $opts{'s'}) {open SQL, '>results/'.$filename.'_SQL.sql'}
 	elsif ($opts{'s'}) {print "\nIgnoring SQL option -s in non hg19 context\n"}
 	foreach my $key (sort keys %transcript_hash) {	
 	#foreach my $obj (@transcript) {
 		#$key =~ /(\w+)-(N[RM]_\d+)/o;
 		#my ($gene, $nm) = ($1, $2);
+		$isoform_counter++;
 		my $obj_transcript = $transcript_hash{$key};
 		print INFO "$key\n";
-		print SUMMARY "$key\t".$obj_transcript->getMain()."\n";
+		print SUMMARY $key.$obj_transcript->getNMVersion()."\t".$obj_transcript->getNG()."\t".$obj_transcript->getMain()."\n";
 		if ($obj_transcript->getChr()){#if false, rest client failed => the gene is in the error file and needs to be reran
 			print INFO $obj_transcript->toPrint();
 			if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_transcript->toSQL()}
@@ -463,10 +467,10 @@ sub main {
 	#bedtools to merge intervals
 	if ($BEDTOOLS) {
 		my $bed = 'results/'.$filename."_exons_$genome";
-		system "sort -k1,1 -k2,2n $bed.bed > $bed.sorted.bed; $BEDTOOLS merge -i $bed.sorted.bed -c 4,5,6 -o collapse,distinct,distinct > $bed.sorted.merged.bed";
+		system "sort -k1,1 -k2,2n $bed.bed > $bed.sorted.bed; $BEDTOOLS merge -i $bed.sorted.bed -header -c 4,5,6 -o collapse,distinct,distinct > $bed.sorted.merged.bed";
 		unlink "$bed.bed", "$bed.sorted.bed";
 	}
-	#print $test;
+	print "\n\n$isoform_counter isoforms treated\n\n";
 	#foreach (@{$test}) {print "$_\n"}
 }
 
