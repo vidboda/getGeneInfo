@@ -316,7 +316,7 @@ sub populate {
 									my ($start, $end);									
 									my $strand = $transcript->getStrand();
 									if ($k != $transcript->getNbExons()) {
-										($start, $end) = ($exon_start[$k], $exon_end[$k]-1);#ucsc is 0-based
+										($start, $end) = ($exon_start[$k]+1, $exon_end[$k]);#ucsc is 0-based for start and 1-based for end
 										if ($strand eq '-') {($start, $end) = ($exon_start[$k], $exon_end[$k]+1)}
 									}
 									my $segment = segment->new($content[$nm], $gene_name);

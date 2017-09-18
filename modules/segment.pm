@@ -64,10 +64,10 @@ sub toPrint {
 }
 
 
-sub toBed {
+sub toBed {#start becomes start-1 as UCSC BED is 0-based for start and 1-based for end
 	my ($self, $chr, $strand, $offset) = @_;
-	if ($strand eq '+') {return "$chr\t".($self->getStartG()-$offset)."\t".($self->getEndG()+$offset)."\t".$self->getNM().'-'.$self->getNumber()."\t0\t$strand\n"}
-	else {return "$chr\t".($self->getEndG()-$offset)."\t".($self->getStartG()+$offset)."\t".$self->getNM().'-'.$self->getNumber()."\t0\t$strand\n"}
+	if ($strand eq '+') {return "$chr\t".($self->getStartG()-$offset-1)."\t".($self->getEndG()+$offset)."\t".$self->getGeneName().":".$self->getNM().'-'.$self->getNumber()."\t0\t$strand\n"}
+	else {return "$chr\t".($self->getEndG()-$offset-1)."\t".($self->getStartG()+$offset)."\t".$self->getGeneName().":".$self->getNM().'-'.$self->getNumber()."\t0\t$strand\n"}
 }
 
 sub toSQL {
