@@ -87,6 +87,8 @@ sub populate {
 	#my $ua = LWP::UserAgent->new('agent' => 'Mozilla/5.0');
 	#$ua->agent('Mozilla/5.0');
 	local $| = 1;
+	my $iso = 1;#to count specific genes isoforms for protein names which should be unique un ushvam2
+	my $current_gene;
 	while (my $gene_name = <F>) {
 		#if (/(\w+)/o) {push @genes, $1}	
 		chomp($gene_name);
@@ -101,6 +103,8 @@ sub populate {
 			close H;
 			if ($valid_hgnc != 1) {print "\n$gene_name is not a valid HGNC gene coding name. Please check and resubmit\n";&error($gene_name);next;}
 			
+			if ($iso == 1) {$current_gene = $gene_name}			
+			if ($current_gene ne $gene_name) {$iso = 1}
 			print "Treating $gene_name...";
 			$gene_counter++;
 			#my $gene_name = $_;
@@ -170,11 +174,17 @@ sub populate {
 								}
 							}
 							else {$data = $uniprot_hash{$transcript->getUniprot()}}
+							my ($short_prot) = (ucfirst(lc($transcript->getGeneName())));
+							if ($iso > 1) {$short_prot .= " ($iso)"}
 							if ($data) {
-								my @uniprot = split(/\n/, $data);
+								my @uniprot = split(/\n/, $data);								
 								foreach (@uniprot) {
 									if (/^ID\s+\w+\s+\w+\;\s+(\d+)\sAA\./o) {$transcript->setProtSize($1)}
-									elsif (/^DE\s+RecName:\sFull=([\w\s,\/'-]+)[\;\(\{]/o) {$transcript->setProtName($1);$transcript->setShortProt(ucfirst(lc($transcript->getGeneName())))}
+									elsif (/^DE\s+RecName:\sFull=([\w\s,\/'-]+)[\;\(\{]/o) {
+										if ($iso > 1) {$transcript->setProtName("$1 ($iso)")}
+										else {$transcript->setProtName($1)}
+										$transcript->setShortProt($short_prot);
+									}
 									elsif (/^FT\s+(DOMAIN|MOTIF|TRANSMEM|SIGNAL|TOPO_DOM|REGION|COMPBIAS|REPEAT|COILED)\s+(\d+)\s+(\d+)\s+(.+)\./o) {
 										my ($type, $start_aa, $end_aa, $dom_name) = ($1, $2, $3, $4);
 										if ($start_aa <= $transcript->getProtSize() || $end_aa <= $transcript->getProtSize()) {
@@ -189,20 +199,24 @@ sub populate {
 											
 											$domain->setName($dom_name);
 											$domain->setStartAA($start_aa);
-										$domain->setEndAA($end_aa);
+											$domain->setEndAA($end_aa);
 											push @domains, $domain;
 										}
 										
 									}
 								}
-								if((!$transcript->getProtName()))  {$transcript->setProtName(ucfirst(lc($transcript->getGeneName())));$transcript->setShortProt(ucfirst(lc($transcript->getGeneName())));}
+								if((!$transcript->getProtName()))  {									
+									$transcript->setProtName($short_prot);
+									$transcript->setShortProt($short_prot);
+								}
 								$domain_hash{"$gene_name-$content[$nm]"} = \@domains;
 							}
 							else {
-								$transcript->setProtName('NULL');
-								$transcript->setShortProt('NULL');
+								$transcript->setProtName($short_prot);
+								$transcript->setShortProt($short_prot);
 								$transcript->setProtSize('NULL');
 							}
+							$iso++;
 							push @transcript , $transcript;
 							$transcript_hash{"$gene_name-$content[$nm]"} = $transcript;
 							$j = 1;
@@ -220,6 +234,8 @@ sub populate {
 				}
 			}
 			close G;
+			
+			$iso++;
 			if ($j == 0) {&error($gene_name)}
 			my ($ng, $np, $main, $nm_ver, $actual_nm);
 			($i, $j, $ng, $nm, $np, $main, $name) = (0, 0, 0, 0, 0, 0, 0);
