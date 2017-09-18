@@ -99,7 +99,7 @@ sub populate {
 				#print "\n".(split(/\t/, $_))[1]."\n";
 				if ($gene_name eq (split(/\t/, $_))[1]) {$valid_hgnc = 1;last;}}
 			close H;
-			if ($valid_hgnc != 1) {print "\n$gene_name is not a valid HGNC name. Please check and resubmit\n";&error($gene_name);next;}
+			if ($valid_hgnc != 1) {print "\n$gene_name is not a valid HGNC gene coding name. Please check and resubmit\n";&error($gene_name);next;}
 			
 			print "Treating $gene_name...";
 			$gene_counter++;
@@ -443,7 +443,7 @@ sub main {
 		$isoform_counter++;
 		my $obj_transcript = $transcript_hash{$key};
 		print INFO "$key\n";
-		print SUMMARY $key.$obj_transcript->getNMVersion()."\t".$obj_transcript->getNG()."\t".$obj_transcript->getMain()."\n";
+		print SUMMARY "$key.".$obj_transcript->getNMVersion()."\t".$obj_transcript->getNG()."\t".$obj_transcript->getMain()."\n";
 		if ($obj_transcript->getChr()){#if false, rest client failed => the gene is in the error file and needs to be reran
 			print INFO $obj_transcript->toPrint();
 			if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_transcript->toSQL()}
