@@ -67,7 +67,7 @@ Several files in the 'results' directory. GENE_LIST is the name of the file and 
 
 * a GENE_LIST_LOVD_domains.txt will contain a summary of the Uniprot protein domains, which can be used in LOVD systems to create menus
 
-* a GENE_LIST_exons_GENOME.sorted.merged.bed, is the bed file that you can load in [UCSC genome browser](https://www.genome.ucsc.edu/) for example, or send to your NGS probes provider.
+* a GENE_LIST_exons_GENOME.sorted.merged.bed, is the bed file that you can load in [UCSC genome browser](https://www.genome.ucsc.edu/) which will show the exons. Beware, it is compliant with UCSC [convention for BED](http://genome.ucsc.edu/blog/the-ucsc-genome-browser-coordinate-counting-systems/) of being 0-based for start positions and 1-based for end positions. This file can be sent to your NGS probes provider.
 
 * a GENE_LIST_error.txt listing the genes for which the program had serious errors
 
