@@ -183,7 +183,7 @@ sub populate {
 									if (/^ID\s+\w+\s+\w+\;\s+(\d+)\sAA\./o) {$transcript->setProtSize($1)}
 									elsif (/^DE\s+RecName:\sFull=([\w\s,\/'-]+)[\;\(\{]/o) {
 										my $prot_name = $1;
-										$prot_name =~ s/'/'\''/og;
+										$prot_name =~ s/'/''/og;
 										if ($iso > 1) {$transcript->setProtName("$prot_name ($iso)")}
 										else {$transcript->setProtName($prot_name)}
 										$transcript->setShortProt($short_prot);
