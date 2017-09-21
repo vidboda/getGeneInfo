@@ -175,14 +175,17 @@ sub populate {
 							}
 							else {$data = $uniprot_hash{$transcript->getUniprot()}}
 							my ($short_prot) = (ucfirst(lc($transcript->getGeneName())));
+							$short_prot =~ s/'/'\''/og;
 							if ($iso > 1) {$short_prot .= " ($iso)"}
 							if ($data) {
 								my @uniprot = split(/\n/, $data);								
 								foreach (@uniprot) {
 									if (/^ID\s+\w+\s+\w+\;\s+(\d+)\sAA\./o) {$transcript->setProtSize($1)}
 									elsif (/^DE\s+RecName:\sFull=([\w\s,\/'-]+)[\;\(\{]/o) {
-										if ($iso > 1) {$transcript->setProtName("$1 ($iso)")}
-										else {$transcript->setProtName($1)}
+										my $prot_name = $1;
+										$prot_name =~ s/'/'\''/og;
+										if ($iso > 1) {$transcript->setProtName("$prot_name ($iso)")}
+										else {$transcript->setProtName($prot_name)}
 										$transcript->setShortProt($short_prot);
 									}
 									elsif (/^FT\s+(DOMAIN|MOTIF|TRANSMEM|SIGNAL|TOPO_DOM|REGION|COMPBIAS|REPEAT|COILED)\s+(\d+)\s+(\d+)\s+(.+)\./o) {
