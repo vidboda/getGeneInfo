@@ -473,7 +473,8 @@ sub main {
 			foreach my $obj_segment (@{$segment_list}) {
 				print INFO $obj_segment->toPrint();
 				if ($obj_segment->getType() eq 'exon') {print BED $obj_segment->toBed($obj_transcript->getChr(), $obj_transcript->getStrand(), $offset)}
-				if ($obj_segment->getType() ne 'intron') {if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_segment->toSQL()}}
+				#if ($obj_segment->getType() ne 'intron') {if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_segment->toSQL()}}
+				if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_segment->toSQL()}
 			}		
 			my $domain_list = $domain_hash{$key};
 			print INFO "#Gene\tNM\tdName\tdStart\tdEnd\n";
