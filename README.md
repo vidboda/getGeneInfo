@@ -1,6 +1,6 @@
 # getGeneInfo
-Perl script to retrieve various info form a list of HGNC genes, including exon coordinates or domain details.
-In particular generates a BED that can be use to design NGS experiences.
+Perl script to retrieve various info from a list of HGNC genes, including exon coordinates or domain details.
+In particular generates a BED that can be used to design NGS experiences.
 
 ## Installation
 
