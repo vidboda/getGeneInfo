@@ -30,7 +30,7 @@ Or by running the query_biomart.pl file ;before running the script you need to i
 
 * an active internet connexion as the program needs to connect to togows.org and uniprot.org
 
-* optionnally you woud need [bedtools](http://bedtools.readthedocs.io/en/latest/) installed in your path (default /usr/local/bin, can be modified at the beginning of the script, line $BEDTOOLS = '/usr/local/bin/bedtools')
+* optionnally you would need [bedtools](http://bedtools.readthedocs.io/en/latest/) installed in your path (default /usr/local/bin, can be modified at the beginning of the script, line $BEDTOOLS = '/usr/local/bin/bedtools')
 bedtools is used to merge the bed output with all exons positions.
 
 ## How to run
@@ -44,8 +44,11 @@ perl getGeneInfo.pl -l GENE_LIST.txt -g hg19 -o 50 -n
 with gene_list.txt being a text file with HGNC gene names to process:
 
 USH2A
+
 CLRN1
+
 CFTR
+
 ..
 
 the -g option is to fill with hg19 or hg38 human genome assemblies
@@ -63,7 +66,7 @@ If the script encounters critical errors for a gene, this gene will be reported 
 
 Several files in the 'results' directory. GENE_LIST is the name of the file and GENOME the version you provided as input.
 
-* a GENE_LIST_info.txt file which will contain info on accession numbers (NCBI, Ensembl...), exon genomic locations, protein domains for each RefSeq isiform
+* a GENE_LIST_info.txt file which will contain info on accession numbers (NCBI, Ensembl...), exon genomic locations, protein domains for each RefSeq isoform
 
 * a GENE_LIST_LOVD_domains.txt will contain a summary of the Uniprot protein domains, which can be used in LOVD systems to create menus
 
