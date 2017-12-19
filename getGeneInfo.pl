@@ -241,7 +241,8 @@ sub populate {
 			$iso++;
 			if ($j == 0) {&error($gene_name)}
 			my ($ng, $np, $main, $nm_ver, $actual_nm);
-			($i, $j, $ng, $nm, $np, $main, $name) = (0, 0, 0, 0, 0, 0, 0);
+			($i, $j, $ng, $nm, $np, $main, $name,) = (0, 0, 0, 0, 0, 0, 0);
+			my $k = 0;
 			open G, "$REFGENE" or die $!; #second file refgene file for NM version, NG, NP, main
 			print "Searching refSeq IDs...";
 			while (my $line = <G>) {
@@ -262,19 +263,25 @@ sub populate {
 				if ($line =~ /\s$gene_name\s/) {
 					my @content = split(/\t/, $line);
 					my $complete_nm = $content[$nm];
-					$complete_nm =~ /(N[RM]_\d+)\.(\d)/o;
-					($actual_nm, $nm_ver) = ($1, $2);
-					if ($content[$nm] ne '' && $transcript_hash{"$gene_name-$actual_nm"}) {#si on a un NM d'intérêt
-						my $transcript = $transcript_hash{"$gene_name-$actual_nm"};
-						$transcript->setNG($content[$ng]);
-						$transcript->setNP($content[$np]);
-						$transcript->setNMVersion($nm_ver);
-						if ($content[$main] =~ /reference/o) {$transcript->setMain('t')}
-						else {$transcript->setMain('f')}#beware, there can be several main; must be checked by hand
+					if ($complete_nm =~ /(N[RM]_\d+)\.(\d)/o) {
+						#print $complete_nm;exit;
+						($actual_nm, $nm_ver) = ($1, $2);
+						if ($content[$nm] ne '' && $transcript_hash{"$gene_name-$actual_nm"}) {#si on a un NM d'intérêt
+							my $transcript = $transcript_hash{"$gene_name-$actual_nm"};
+							$transcript->setNG($content[$ng]);
+							$transcript->setNP($content[$np]);
+							$transcript->setNMVersion($nm_ver);
+							if ($content[$main] =~ /reference/o) {$transcript->setMain('t')}
+							else {$transcript->setMain('f')}#beware, there can be several main; must be checked by hand
+							$k++;
+						}
 					}
+					else {$j++}
 				}
 			}
 			close G;
+			if ($k == 0 && $j != 0) {&error($gene_name)}
+			$j = 0;
 			#ucsc via togows to get chr, strand, exons
 			#http://togows.org/api/ucsc/hg19/refGene/name2=actg1
 			print "Searching general infos and defining exons/introns...";
