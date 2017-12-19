@@ -13,9 +13,11 @@ To run it properly you should have inside the root directory of the program:
 1. one Biomart file with the following columns (tab separated), ideally named 'mart_export.txt':
 ENST, ENSP, HGNCid, RefSeq NM, UNIPROT
 
-which can be obtained directly via the ensembl-biomart web [site](http://www.ensembl.org/biomart/):
+which can be obtained directly via the ensembl-biomart web [site](http://www.ensembl.org/biomart/martview/):
 
-Select Human genes dataset and attributes: Transcript Stable ID, Protein stable ID in gene attributes, and in external attributes HGNC ID, RefSeq mRNA ID and UniProtKB Gene Name ID .
+Select Human genes dataset and attributes: Gene Stable ID, Transcript Stable ID, Protein stable ID in gene attributes, and in external attributes HGNC ID, RefSeq mRNA ID and UniProtKB Gene Name ID .
+
+Then export by selecting Results, and TSV file (Go).
 
 Or by running the query_biomart.pl file ;before running the script you need to install the biomart API: <http://www.biomart.org/other/install-overview.html>
 
