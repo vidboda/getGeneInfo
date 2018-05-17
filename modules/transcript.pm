@@ -31,6 +31,7 @@ sub new { #constructeur
 			'"MiniSeq-3"' => 'f',
 			'"MiniSeq-121"' => 'f',
 			'"MiniSeq-132"' => 'f',
+			'"MiniSeq-152"' => 'f',
 			'"NextSeq-ClinicalExome"' => 't',
 		};
         }
