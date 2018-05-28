@@ -11,7 +11,7 @@ To run it properly you should have inside the root directory of the program:
 * a 'data' directory with:
 
 1. one Biomart file with the following columns (tab separated), ideally named 'mart_export.txt':
-ENST, ENSP, HGNCid, RefSeq NM, UNIPROT
+Gene stable ID,	Transcript stable ID,	Gene name,	RefSeq mRNA ID,	Protein stable ID,	HGNC ID,	UniProtKB, Gene Name ID
 
 which can be obtained directly via the ensembl-biomart web [site](http://www.ensembl.org/biomart/martview/):
 
