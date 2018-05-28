@@ -15,7 +15,7 @@ Gene stable ID,	Transcript stable ID,	Gene name,	RefSeq mRNA ID,	Protein stable 
 
 which can be obtained directly via the ensembl-biomart web [site](http://www.ensembl.org/biomart/martview/):
 
-Select Human genes dataset and attributes: Gene Stable ID, Transcript Stable ID, Protein stable ID in gene attributes, and in external attributes HGNC ID, RefSeq mRNA ID and UniProtKB Gene Name ID .
+Select Human genes dataset and attributes: Gene Stable ID, Transcript Stable ID, Protein stable ID in **gene attributes**, and in **external attributes**: HGNC ID, RefSeq mRNA ID and UniProtKB Gene Name ID .
 
 Then export by selecting Results, and TSV file (Go).
 
