@@ -10,12 +10,12 @@ To run it properly you should have inside the root directory of the program:
 
 * a 'data' directory with:
 
-1. one Biomart file with the following columns (tab separated), ideally named 'mart_export.txt':
-ENST, ENSP, HGNCid, RefSeq NM, UNIPROT
+1. one Biomart file with the following 7 columns (tab separated), ideally named 'mart_export.txt':
+Gene stable ID,	Transcript stable ID,	Gene name,	RefSeq mRNA ID,	Protein stable ID,	HGNC ID,	UniProtKB Gene Name ID
 
 which can be obtained directly via the ensembl-biomart web [site](http://www.ensembl.org/biomart/martview/):
 
-Select Human genes dataset and attributes: Gene Stable ID, Transcript Stable ID, Protein stable ID in gene attributes, and in external attributes HGNC ID, RefSeq mRNA ID and UniProtKB Gene Name ID .
+Select Human genes dataset and attributes: Gene Stable ID, Transcript Stable ID, Protein stable ID in **gene attributes**, and in **external attributes**: HGNC ID, RefSeq mRNA ID and UniProtKB Gene Name ID .
 
 Then export by selecting Results, and TSV file (Go).
 
