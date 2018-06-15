@@ -31,7 +31,7 @@ sub new { #constructeur
 			'"MiniSeq-3"' => 'f',
 			'"MiniSeq-121"' => 'f',
 			'"MiniSeq-132"' => 'f',
-			'"MiniSeq-152"' => 'f',
+			'"MiniSeq-152"' => 't',
 			'"NextSeq-ClinicalExome"' => 't',
 		};
         }
@@ -111,6 +111,7 @@ sub setMnS121 {my ($self, $mns121) = @_;$self->{'"MiniSeq-121"'} = $mns121}
 sub getMnS121 {my $self = shift;return $self->{'"MiniSeq-121"'}}
 sub setMnS132 {my ($self, $mns132) = @_;$self->{'"MiniSeq-132"'} = $mns132}
 sub getMnS132 {my $self = shift;return $self->{'"MiniSeq-132"'}}
+sub getMnS152 {my $self = shift;return $self->{'"MiniSeq-152"'}}
 sub setNxTSqCE {my ($self, $nxtsq_ce) = @_;$self->{'"NextSeq-ClinicalExome"'} = $nxtsq_ce}
 sub getNxTSqCE {my $self = shift;return $self->{'"NextSeq-ClinicalExome"'}}
 sub setHGNC {my ($self, $hgnc) = @_;$self->{hgnc} = $hgnc}
@@ -128,7 +129,7 @@ sub toSQL {
 	my $self = shift;
 	my $chr = $self->getChr();
 	$chr =~ s/chr//o;
-	my $sql = "INSERT INTO gene (nom, second_name, chr, brin, nbre_exons, nom_prot, short_prot, taille_prot, uniprot_id, acc_version, gi_nm, acc_g, gi_ng, acc_p, gi_np, enst, ensp,  translation_start_site, mutalyzer_version, main, usher, rp, dfn, extended_ns, \"MiSeq-28\", \"MiSeq-112\", \"MiSeq-121\", \"MiSeq-132\", \"MiSeq-3\", \"MiniSeq-3\", \"MiniSeq-121\", \"MiniSeq-132\", \"NextSeq-ClinicalExome\") VALUES ( '{\"".$self->getGeneName()."\",\"".$self->getNM()."\"}','".$self->getSecondName()."','".$chr."','".$self->getStrand()."','".$self->getNbExons()."','".$self->getProtName()."','".$self->getShortProt()."','".$self->getProtSize()."','".$self->getUniprot()."','".$self->getNMVersion()."',NULL,'".$self->getNG()."',NULL,'".$self->getNP()."',NULL,'".$self->getENST()."','".$self->getENSP()."','".$self->getTss()."','".$self->getMutalyzerVer()."','".$self->getMain()."','".$self->getUsh()."','".$self->getRP()."','".$self->getDfn()."','".$self->getExtDfn()."','".$self->getMS28()."','".$self->getMS112()."','".$self->getMS121()."','".$self->getMS132()."','".$self->getMS3()."','".$self->getMnS3()."','".$self->getMnS121()."','".$self->getMnS132()."','".$self->getNxTSqCE()."');\n";
+	my $sql = "INSERT INTO gene (nom, second_name, chr, brin, nbre_exons, nom_prot, short_prot, taille_prot, uniprot_id, acc_version, gi_nm, acc_g, gi_ng, acc_p, gi_np, enst, ensp,  translation_start_site, mutalyzer_version, main, usher, rp, dfn, extended_ns, \"MiSeq-28\", \"MiSeq-112\", \"MiSeq-121\", \"MiSeq-132\", \"MiSeq-3\", \"MiniSeq-3\", \"MiniSeq-121\", \"MiniSeq-132\", \"NextSeq-ClinicalExome\", \"MiniSeq-152\") VALUES ( '{\"".$self->getGeneName()."\",\"".$self->getNM()."\"}','".$self->getSecondName()."','".$chr."','".$self->getStrand()."','".$self->getNbExons()."','".$self->getProtName()."','".$self->getShortProt()."','".$self->getProtSize()."','".$self->getUniprot()."','".$self->getNMVersion()."',NULL,'".$self->getNG()."',NULL,'".$self->getNP()."',NULL,'".$self->getENST()."','".$self->getENSP()."','".$self->getTss()."','".$self->getMutalyzerVer()."','".$self->getMain()."','".$self->getUsh()."','".$self->getRP()."','".$self->getDfn()."','".$self->getExtDfn()."','".$self->getMS28()."','".$self->getMS112()."','".$self->getMS121()."','".$self->getMS132()."','".$self->getMS3()."','".$self->getMnS3()."','".$self->getMnS121()."','".$self->getMnS132()."','".$self->getNxTSqCE()."', '".$self->getMnS152()."');\n";
 	return $sql;
 }
 #".$self->get().",
