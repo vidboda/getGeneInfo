@@ -22,7 +22,7 @@ sub new { #constructeur
                         'USHER' => 'f',
                         'RP' => 'f',
                         'DFN' => 'f',
-                        'EXTENDED_DFN' => 't',
+                        'EXTENDED_DFN' => 'f',
 			'"MiSeq-28"' => 'f',
 			'"MiSeq-112"' => 'f',
 			'"MiSeq-121"' => 'f',
@@ -31,8 +31,9 @@ sub new { #constructeur
 			'"MiniSeq-3"' => 'f',
 			'"MiniSeq-121"' => 'f',
 			'"MiniSeq-132"' => 'f',
-			'"MiniSeq-152"' => 't',
-			'"NextSeq-ClinicalExome"' => 't',
+			'"MiniSeq-152"' => 'f',
+			'"NextSeq-ClinicalExome"' => 'f',
+			'ns_gene' => 'f',
 		};
         }
 	bless ($self, $class);
@@ -114,10 +115,16 @@ sub getMnS132 {my $self = shift;return $self->{'"MiniSeq-132"'}}
 sub getMnS152 {my $self = shift;return $self->{'"MiniSeq-152"'}}
 sub setNxTSqCE {my ($self, $nxtsq_ce) = @_;$self->{'"NextSeq-ClinicalExome"'} = $nxtsq_ce}
 sub getNxTSqCE {my $self = shift;return $self->{'"NextSeq-ClinicalExome"'}}
+sub setNsGene {my ($self, $ns) = @_;$self->{'ns_gene'} = $ns}
+sub getNsGene {my $self = shift;return $self->{'ns_gene'}}
 sub setHGNC {my ($self, $hgnc) = @_;$self->{hgnc} = $hgnc}
 sub getHGNC {my $self = shift;return $self->{hgnc}}
 
-
+sub isMito {
+	my $self = shift;
+	if ($self->getChr() =~ /M/) {return 't'}
+	else {return 'f'}	
+}
 sub toPrint {
 	my $self = shift;
 	my $txt =  "#Gene\tSecondName\tNM\tENST\tENSP\tHGNC\tUNIPROT\tNMVersion\tNG\tNP\tMainIsoform\tChr\tStrand\t#Exons\tTssPos\tpName\tpShort\tpSize\n";
@@ -129,7 +136,7 @@ sub toSQL {
 	my $self = shift;
 	my $chr = $self->getChr();
 	$chr =~ s/chr//o;
-	my $sql = "INSERT INTO gene (nom, second_name, chr, brin, nbre_exons, nom_prot, short_prot, taille_prot, uniprot_id, acc_version, gi_nm, acc_g, gi_ng, acc_p, gi_np, enst, ensp,  translation_start_site, mutalyzer_version, main, usher, rp, dfn, extended_ns, \"MiSeq-28\", \"MiSeq-112\", \"MiSeq-121\", \"MiSeq-132\", \"MiSeq-3\", \"MiniSeq-3\", \"MiniSeq-121\", \"MiniSeq-132\", \"NextSeq-ClinicalExome\", \"MiniSeq-152\") VALUES ( '{\"".$self->getGeneName()."\",\"".$self->getNM()."\"}','".$self->getSecondName()."','".$chr."','".$self->getStrand()."','".$self->getNbExons()."','".$self->getProtName()."','".$self->getShortProt()."','".$self->getProtSize()."','".$self->getUniprot()."','".$self->getNMVersion()."',NULL,'".$self->getNG()."',NULL,'".$self->getNP()."',NULL,'".$self->getENST()."','".$self->getENSP()."','".$self->getTss()."','".$self->getMutalyzerVer()."','".$self->getMain()."','".$self->getUsh()."','".$self->getRP()."','".$self->getDfn()."','".$self->getExtDfn()."','".$self->getMS28()."','".$self->getMS112()."','".$self->getMS121()."','".$self->getMS132()."','".$self->getMS3()."','".$self->getMnS3()."','".$self->getMnS121()."','".$self->getMnS132()."','".$self->getNxTSqCE()."', '".$self->getMnS152()."');\n";
+	my $sql = "INSERT INTO gene (nom, second_name, chr, brin, nbre_exons, nom_prot, short_prot, taille_prot, uniprot_id, acc_version, gi_nm, acc_g, gi_ng, acc_p, gi_np, enst, ensp,  translation_start_site, mutalyzer_version, main, usher, rp, dfn, extended_ns, \"MiSeq-28\", \"MiSeq-112\", \"MiSeq-121\", \"MiSeq-132\", \"MiSeq-3\", \"MiniSeq-3\", \"MiniSeq-121\", \"MiniSeq-132\", \"NextSeq-ClinicalExome\", \"MiniSeq-152\", \"mito\", \"ns_gene\") VALUES ( '{\"".$self->getGeneName()."\",\"".$self->getNM()."\"}','".$self->getSecondName()."','".$chr."','".$self->getStrand()."','".$self->getNbExons()."','".$self->getProtName()."','".$self->getShortProt()."','".$self->getProtSize()."','".$self->getUniprot()."','".$self->getNMVersion()."',NULL,'".$self->getNG()."',NULL,'".$self->getNP()."',NULL,'".$self->getENST()."','".$self->getENSP()."','".$self->getTss()."','".$self->getMutalyzerVer()."','".$self->getMain()."','".$self->getUsh()."','".$self->getRP()."','".$self->getDfn()."','".$self->getExtDfn()."','".$self->getMS28()."','".$self->getMS112()."','".$self->getMS121()."','".$self->getMS132()."','".$self->getMS3()."','".$self->getMnS3()."','".$self->getMnS121()."','".$self->getMnS132()."','".$self->getNxTSqCE()."', '".$self->getMnS152()."', '".$self->isMito()."', '".$self->getNsGene()."');\n";
 	return $sql;
 }
 #".$self->get().",

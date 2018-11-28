@@ -1,8 +1,8 @@
 #!/usr/bin/perl -w
-
 use strict;
 use Getopt::Std;
 use REST::Client;
+#use LWP::UserAgent;
 use Net::Ping;
 use File::Basename;
 use modules::transcript;
@@ -41,8 +41,6 @@ if (-f 'data/HGNC_coding.txt') {
 else {'die no refSeq file, you should download ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/RefSeqGene/LRG_RefSeqGene'}
 if (-f 'liftover/liftOver_i386') {$LIFTOVER = 'liftover/liftOver_i386'}
 else {'die no liftover binary, you should download one for your system at UCSC http://hgdownload.soe.ucsc.edu/admin/exe/'}
-if (-f 'liftover/hg19ToHg38.over.chain.gz') {$LIFTOVER_CHAIN = 'liftover/hg19ToHg38.over.chain.gz'}
-else {'die no liftover chain, you should download one at UCSC http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz'}
 if (! -d 'results') {mkdir('results', '0755')}
 if (! -d 'tmp') {mkdir('tmp', '0755')}
 
@@ -54,7 +52,7 @@ my $p = Net::Ping->new();
 if (!defined($p->ping("togows.org", 1))) {die "\n togows.org is not reachable, please check your internet connection\n"}
 
 my (%opts, $filename, $path, $genome, $offset, @transcript, %transcript_hash, %segment_hash, %domain_hash, %uniprot_hash);#, $gene, $segment, $domaine);
-getopts('snl:g:o:', \%opts);
+getopts('sne:l:g:o:', \%opts);
 
 if ((not exists $opts{'l'}) || ($opts{'l'} !~ /\.txt$/o) || (not exists $opts{'g'})  || $opts{'g'} !~ /hg(19|38)$/o) {
 	&HELP_MESSAGE();
@@ -65,9 +63,17 @@ if ($opts{'l'}) {($filename, $path) = fileparse($opts{'l'}, qr/\.[^.]*/)}
 #if ($opts{'l'} =~ /^(.+)([^\/]+)\.txt$/o) {$list = $2;$path = $1.$list} #get file path and prefix
 #elsif ($opts{'l'} =~ /^([^\/]+)\.txt$/o) {$list = $1; $path = $list}
 if ($opts{'g'} =~ /hg(19|38)/) {$genome = "hg$1"}
+
+if ($genome eq 'hg19' && -f 'liftover/hg19ToHg38.over.chain.gz') {$LIFTOVER_CHAIN = 'liftover/hg19ToHg38.over.chain.gz'}
+else {'die no liftover hg19238 chain, you should download one at UCSC http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz'}
+if ($genome eq 'hg38' && -f 'liftover/hg19ToHg38.over.chain.gz') {$LIFTOVER_CHAIN = 'liftover/hg38ToHg19.over.chain.gz'}
+else {'die no liftover hg38219 chain, you should download one at UCSC http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg38ToHg19.over.chain.gz'}
+
 if ($opts{'o'} && $opts{'o'} =~ /(\d+)/o) {$offset = $1}
 else {$offset = 0}
 my $gene_counter = 0;
+my $email='';#email to put as header in UIPROT REST request
+if ($opts{'e'} && $opts{'e'} =~ /^([\w\.]+@\w+\.\w{2,3})$/o) {$email = $1}
 #prepare error file
 #open E, ">".$list."_error.txt";
 #close E;
@@ -129,6 +135,7 @@ sub populate {
 				}
 				if ($line =~ /\s$gene_name\s/) {
 					my @content = split(/\t/, $line);
+					#print "$line\n";
 					if ($content[$nm] ne '' && !$transcript_hash{$content[$nm]}) {#unique NM
 						my $transcript = transcript->new($content[$nm]);
 						$transcript->setENST($content[$enst]);
@@ -143,14 +150,17 @@ sub populate {
 									#print $hgnc_data[8];
 									if (length $hgnc_data[8] < 21) {$transcript->setSecondName($hgnc_data[8])}
 									else {$transcript->setSecondName(substr($hgnc_data[8], 0, 20))}
-								}								
+								}						
+								#first occurence of Uniprot ID - is also checked in mart export
+								if ($hgnc_data[25] =~ /([\w]{6})$/o) {$transcript->setUniprot($1)}
 							}
 						}					
 						$transcript->setGeneName($content[$name]);
 						
 						#if ($content[$uniprot] && $content[$uniprot] ne '') {
-						if ($content[$uniprot] && length($content[$uniprot]) == 6) {#swissprot only
-							$transcript->setUniprot($content[$uniprot]);
+						if ($content[$uniprot] && length($content[$uniprot]) == 6 || $transcript->getUniprot() ne '') {#swissprot only
+							#print "$content[$uniprot]\n";
+							if ($transcript->getUniprot() eq '') {$transcript->setUniprot($content[$uniprot])}
 							#get info from UNIPROT and create domain objs
 							#my $response = $ua->get('http://www.uniprot.org/uniprot/'.$transcript->getUniprot().'.txt');
 							
@@ -158,20 +168,26 @@ sub populate {
 							if (! defined($uniprot_hash{$transcript->getUniprot()})) {
 								my $uniprot_code = $transcript->getUniprot();
 								#my $data = `wget http://www.uniprot.org/uniprot/$uniprot_code.txt`;
-								my $uniprot_client = REST::Client->new(timeout => 10);
-								my $response = $uniprot_client->GET('http://www.uniprot.org/uniprot/'.$transcript->getUniprot().'.txt');
-								if ($uniprot_client->responseCode() == 200) {
-								#if ($response->is_success()) {
+								$data = `curl https://www.uniprot.org/uniprot/$uniprot_code.txt`;
+								#print "curl results:$data\n";
+								##remove ### to get REST UNIPROT call
+								###my $uniprot_client = REST::Client->new(timeout => 10);
+								###$uniprot_client->addHeader('contact_email'=>$email);
+								###my $response = $uniprot_client->GET('https://www.uniprot.org/uniprot/'.$transcript->getUniprot().'.txt');
+								#my $response = $ua->get('https://www.uniprot.org/uniprot/'.$transcript->getUniprot().'.txt');
+								###if ($uniprot_client->responseCode() == 200) {
+									#if ($response->is_success()) {
 									#print $response->decoded_content;  # or whatever
-									#my $data = $response->decoded_content();
-									$data = $uniprot_client->responseContent();
-									$uniprot_hash{$transcript->getUniprot()} = $data;
+									#$data = $response->decoded_content();
+									###$data = $uniprot_client->responseContent();
+									###$uniprot_hash{$transcript->getUniprot()} = $data;
 									
-								}
-								else {
+								###}
+								###else {
 									#print "\nUNIPROT did not respond for ".$transcript->getGeneName()."-".$transcript->getNM()." (UNIPROT ID ".$transcript->getUniprot()."): ".$response->status_line()."\n"
-									print "\nUNIPROT did not respond for ".$transcript->getGeneName()."-".$transcript->getNM()." (UNIPROT ID ".$transcript->getUniprot().", 'http://www.uniprot.org/uniprot/".$transcript->getUniprot().".txt'): ".$uniprot_client->responseCode()."\n"
-								}
+									###print "\nUNIPROT did not respond for ".$transcript->getGeneName()."-".$transcript->getNM()." (UNIPROT ID ".$transcript->getUniprot().", 'https://www.uniprot.org/uniprot/".$transcript->getUniprot().".txt'): ".$uniprot_client->responseCode()."\n"
+								###}
+									##end remove
 							}
 							else {$data = $uniprot_hash{$transcript->getUniprot()}}
 							my ($short_prot) = (ucfirst(lc($transcript->getGeneName())));
@@ -180,6 +196,7 @@ sub populate {
 							if ($data) {
 								my @uniprot = split(/\n/, $data);								
 								foreach (@uniprot) {
+									#print $_;
 									if (/^ID\s+\w+\s+\w+\;\s+(\d+)\sAA\./o) {$transcript->setProtSize($1)}
 									elsif (/^DE\s+RecName:\sFull=([\w\s,\/'-]+)[\;\(\{]/o) {
 										my $prot_name = $1;
@@ -221,6 +238,7 @@ sub populate {
 							}
 							$iso++;
 							push @transcript , $transcript;
+							print $transcript->getNM();
 							$transcript_hash{"$gene_name-$content[$nm]"} = $transcript;
 							$j = 1;
 						}
@@ -230,6 +248,7 @@ sub populate {
 							$transcript->setShortProt('NULL');
 							$transcript->setProtSize('NULL');
 							push @transcript , $transcript;
+							print $transcript->getNM();
 							$transcript_hash{"$gene_name-$content[$nm]"} = $transcript;
 	;						}
 						#}
@@ -244,7 +263,7 @@ sub populate {
 			($i, $j, $ng, $nm, $np, $main, $name,) = (0, 0, 0, 0, 0, 0, 0);
 			my $k = 0;
 			open G, "$REFGENE" or die $!; #second file refgene file for NM version, NG, NP, main
-			print "Searching refSeq IDs...";
+			print "  Searching refSeq IDs...";
 			while (my $line = <G>) {
 				chomp($line);
 				if ($line =~ /^#/o) {#look for columns
@@ -286,7 +305,7 @@ sub populate {
 			#http://togows.org/api/ucsc/hg19/refGene/name2=actg1
 			print "Searching general infos and defining exons/introns...";
 			my $togows_client = REST::Client->new(timeout => 10);
-			$togows_client->GET("http://togows.org/api/ucsc/hg19/refGene/name2=$gene_name");
+			$togows_client->GET("http://togows.org/api/ucsc/$genome/refGene/name2=$gene_name");
 			if ($togows_client->responseCode() == 200) {
 				my ($chr, $strand, $txstart, $txend, $cdsstart, $cdsend, $exon_count, $exon_start, $exon_end, $exon_frames);
 				$i = 0;
@@ -352,12 +371,24 @@ sub populate {
 										$segment->setNumber('-1');
 										$segment->setName('5UTR');
 										if ($strand eq '+') {
-											$segment->setStartG($start-2001);
-											$segment->setEndG($start-1);
+											if ($genome eq 'hg19') {
+												$segment->setStartG($start-2001);
+												$segment->setEndG($start-1);
+											}
+											elsif ($genome eq 'hg38') {
+												$segment->setStartG38($start-2001);
+												$segment->setEndG38($start-1);
+											}
 										}
 										else {
-											$segment->setStartG($start+2001);
-											$segment->setEndG($start+1);
+											if ($genome eq 'hg19') {
+												$segment->setStartG($start+2001);
+												$segment->setEndG($start+1);
+											}
+											elsif ($genome eq 'hg38') {
+												$segment->setStartG38($start+2001);
+												$segment->setEndG38($start+1);
+											}
 										}
 										$segment->setSize(2000);
 										push @segments, $segment;
@@ -365,14 +396,29 @@ sub populate {
 										my $segment_exon1 = segment->new($content[$nm], $gene_name);
 										$segment_exon1->setNumber('1');
 										$segment_exon1->setType('exon');
-										$segment_exon1->setStartG($start);
-										$segment_exon1->setEndG($end);
+										if ($genome eq 'hg19') {
+											$segment_exon1->setStartG($start);
+											$segment_exon1->setEndG($end);
+										}
+										elsif ($genome eq 'hg38') {
+											$segment_exon1->setStartG38($start);
+											$segment_exon1->setEndG38($end);
+										}
+										
 										$segment_exon1->setExonFrame($exon_frames[$k]);
 										if ($strand eq '+') {$segment_exon1->setSize($end-$start+1)}
 										else {$segment_exon1->setSize($start-$end+1)}
-										$prev = $segment_exon1->getEndG();
+										#if ($genome eq 'hg19') {$prev = $segment_exon1->getEndG()}
+										#elsif ($genome eq 'hg38') {$prev = $segment_exon1->getEndG38()}
 										#liftover $segment_exon1 if hg19
-										if ($genome eq 'hg19') {&liftover($transcript->getChr(),$segment_exon1->getStartG(), $segment_exon1->getEndG(), $strand, $segment_exon1)}
+										if ($genome eq 'hg19') {
+											&liftover($transcript->getChr(),$segment_exon1->getStartG(), $segment_exon1->getEndG(), $strand, $segment_exon1);
+											$prev = $segment_exon1->getEndG();
+										}
+										elsif ($genome eq 'hg38') {
+											&liftover($transcript->getChr(),$segment_exon1->getStartG38(), $segment_exon1->getEndG38(), $strand, $segment_exon1);
+											$prev = $segment_exon1->getEndG38()
+										}
 										push @segments, $segment_exon1;
 									}
 									elsif ($k == $transcript->getNbExons()) {
@@ -381,12 +427,24 @@ sub populate {
 										$segment->setNumber($transcript->getNbExons()+1);
 										$segment->setName('3UTR');
 										if ($strand eq '+') {
-											$segment->setStartG($prev+1);
-											$segment->setEndG($prev+2001);
+											if ($genome eq 'hg19') {
+												$segment->setStartG($prev+1);
+												$segment->setEndG($prev+2001);
+											}
+											elsif ($genome eq 'hg38') {
+												$segment->setStartG38($prev+1);
+												$segment->setEndG38($prev+2001);
+											}
 										}
 										else {
-											$segment->setStartG($prev-1);
-											$segment->setEndG($prev-2001);
+											if ($genome eq 'hg19') {
+												$segment->setStartG($prev-1);
+												$segment->setEndG($prev-2001);
+											}
+											elsif ($genome eq 'hg38') {
+												$segment->setStartG38($prev-1);
+												$segment->setEndG38($prev-2001);
+											}
 										}
 										$segment->setSize(2000);
 										push @segments, $segment;
@@ -395,8 +453,14 @@ sub populate {
 										#exons 2->n / introns 1->n-1
 										$segment->setType('exon');
 										$segment->setNumber($k+1);
-										$segment->setStartG($start);
-										$segment->setEndG($end);			
+										if ($genome eq 'hg19') {
+											$segment->setStartG($start);
+											$segment->setEndG($end);
+										}
+										elsif ($genome eq 'hg38') {
+											$segment->setStartG38($start);
+											$segment->setEndG38($end);
+										}
 										$segment->setExonFrame($exon_frames[$k]);
 										#print $segment->getExonFrame();
 										
@@ -404,24 +468,47 @@ sub populate {
 										$segment_intron->setNumber($k);
 										if ($strand eq '+') {
 											$segment->setSize($end-$start+1);
-											$segment_intron->setStartG($prev+1);
-											$segment_intron->setEndG($segment->getStartG()-1);
-											$segment_intron->setSize($segment->getEndG()-$prev+1);
+											if ($genome eq 'hg19') {
+												$segment_intron->setStartG($prev+1);
+												$segment_intron->setEndG($segment->getStartG()-1);
+												$segment_intron->setSize($segment->getEndG()-$prev+1);
+											}
+											elsif ($genome eq 'hg38') {
+												$segment_intron->setStartG38($prev+1);
+												$segment_intron->setEndG38($segment->getStartG38()-1);
+												$segment_intron->setSize($segment->getEndG38()-$prev+1);
+											}											
 										}
 										else {
 											$segment->setSize($start-$end+1);
-											$segment_intron->setStartG($prev-1);
-											$segment_intron->setEndG($segment->getStartG()+1);
-											$segment_intron->setSize($prev-1-$segment->getStartG());
+											if ($genome eq 'hg19') {
+												$segment_intron->setStartG($prev-1);
+												$segment_intron->setEndG($segment->getStartG()+1);
+												$segment_intron->setSize($prev-1-$segment->getStartG());
+											}
+											elsif ($genome eq 'hg38') {
+												$segment_intron->setStartG38($prev-1);
+												$segment_intron->setEndG38($segment->getStartG38()+1);
+												$segment_intron->setSize($prev-1-$segment->getStartG38());
+											}
+											
 										}
-										#liftover $segment_intron if hg19
-										if ($genome eq 'hg19') {&liftover($transcript->getChr(),$segment_intron->getStartG(), $segment_intron->getEndG(), $strand, $segment_intron)}
-										$prev = $segment->getEndG();
+										#liftover $segment_intron
+										if ($genome eq 'hg19') {
+											&liftover($transcript->getChr(),$segment_intron->getStartG(), $segment_intron->getEndG(), $strand, $segment_intron);
+											$prev = $segment->getEndG();
+										}
+										elsif ($genome eq 'hg38') {
+											&liftover($transcript->getChr(),$segment_intron->getStartG38(), $segment_intron->getEndG38(), $strand, $segment_intron);
+											$prev = $segment->getEndG38();
+										}
+										
 										push @segments, $segment_intron;
 										push @segments, $segment;
 									}
-									#liftover $segment if hg19
+									#liftover $segment
 									if ($genome eq 'hg19') {&liftover($transcript->getChr(),$segment->getStartG(), $segment->getEndG(), $strand, $segment)}
+									if ($genome eq 'hg38') {&liftover($transcript->getChr(),$segment->getStartG38(), $segment->getEndG38(), $strand, $segment)}
 								}
 								#print "$segments[0]\n";
 								$segment_hash{"$gene_name-$content[$nm]"} = \@segments;
@@ -460,8 +547,9 @@ sub main {
 	open INFO, '>results/'.$filename.'_info.txt';
 	open SUMMARY, '>results/'.$filename.'_summary.txt';
 	print SUMMARY "Gene-RefSeq\tNG AccNo\tMain Isoform\n";
-	if ($genome eq 'hg19' && $opts{'s'}) {open SQL, '>results/'.$filename.'_SQL.sql'}
-	elsif ($opts{'s'}) {print "\nIgnoring SQL option -s in non hg19 context\n"}
+	if ($opts{'s'}) {open SQL, '>results/'.$filename.'_SQL.sql'}
+	#if ($genome eq 'hg19' && $opts{'s'}) {open SQL, '>results/'.$filename.'_SQL.sql'}
+	#elsif ($opts{'s'}) {print "\nIgnoring SQL option -s in non hg19 context\n"}
 	foreach my $key (sort keys %transcript_hash) {	
 	#foreach my $obj (@transcript) {
 		#$key =~ /(\w+)-(N[RM]_\d+)/o;
@@ -472,7 +560,8 @@ sub main {
 		print SUMMARY "$key.".$obj_transcript->getNMVersion()."\t".$obj_transcript->getNG()."\t".$obj_transcript->getMain()."\n";
 		if ($obj_transcript->getChr()){#if false, rest client failed => the gene is in the error file and needs to be reran
 			print INFO $obj_transcript->toPrint();
-			if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_transcript->toSQL()}
+			#if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_transcript->toSQL()}
+			if ($opts{'s'}) {print SQL $obj_transcript->toSQL()}
 			my $segment_list = $segment_hash{$key};
 			if ($genome eq 'hg19') {print INFO "#Gene\tNM\tsType\tsNumber\tsName\tsSize\tsStartG\tsEndG\tsStartG38\tsEndG38\tsExonFrame\n"}
 			else {print INFO "#Gene\tNM\tsType\tsNumber\tsName\tsSize\tsStartG\tsEndG\tsExonFrame\n"}
@@ -481,7 +570,8 @@ sub main {
 				print INFO $obj_segment->toPrint();
 				if ($obj_segment->getType() eq 'exon') {print BED $obj_segment->toBed($obj_transcript->getChr(), $obj_transcript->getStrand(), $offset)}
 				#if ($obj_segment->getType() ne 'intron') {if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_segment->toSQL()}}
-				if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_segment->toSQL()}
+				#if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_segment->toSQL()}
+				if ($opts{'s'}) {print SQL $obj_segment->toSQL()}
 			}		
 			my $domain_list = $domain_hash{$key};
 			print INFO "#Gene\tNM\tdName\tdStart\tdEnd\n";
@@ -489,7 +579,8 @@ sub main {
 			foreach my $obj_domain (@{$domain_list}) {
 				print INFO $obj_domain->toPrint();			
 				print LOVD $obj_domain->toLOVD();
-				if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_domain->toSQL($obj_transcript->getShortProt())}
+				#if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_domain->toSQL($obj_transcript->getShortProt())}
+				if ($opts{'s'}) {print SQL $obj_domain->toSQL($obj_transcript->getShortProt())}
 			}
 		}
 	}
@@ -497,7 +588,8 @@ sub main {
 	close BED;
 	close INFO;
 	close SUMMARY;
-	if ($genome eq 'hg19' && $opts{'s'}) {close SQL}
+	#if ($genome eq 'hg19' && $opts{'s'}) {close SQL}
+	if ($opts{'s'}) {close SQL}
 	#bedtools to merge intervals
 	if ($BEDTOOLS) {
 		my $bed = 'results/'.$filename."_exons_$genome";
@@ -547,12 +639,24 @@ sub liftover {
 	while (my $line = <T>) {
 		if ($line =~ /chr[0-9XY]{1,2}\t(\d+)\t(\d+)$/o) {
 			if ($strand eq '+') {
-				$segment->setStartG38($1);
-				$segment->setEndG38($2);
+				if ($genome eq 'hg19') {
+					$segment->setStartG38($1);
+					$segment->setEndG38($2);
+				}
+				elsif ($genome eq 'hg38') {
+					$segment->setStartG($1);
+					$segment->setEndG($2);
+				}
 			}
 			else {
-				$segment->setStartG38($2);
-				$segment->setEndG38($1);
+				if ($genome eq 'hg19') {
+					$segment->setStartG38($2);
+					$segment->setEndG38($1);
+				}
+				elsif ($genome eq 'hg38') {
+					$segment->setStartG($2);
+					$segment->setEndG($1);
+				}
 			}
 		}	
 	}
