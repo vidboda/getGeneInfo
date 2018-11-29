@@ -23,12 +23,11 @@ Or by running the query_biomart.pl file ;before running the script you need to i
 
 2. one RefSeq file obtained at <ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/RefSeqGene/LRG_RefSeqGene> named LRG_RefSeqGene.txt
 
-* a liftover directory with the liftover binaries and the proper hg19 to hg38 chain file:
+* a liftover directory with the proper liftover chain files:
 
+[comment]: <> (1. binaries from <http://hgdownload.soe.ucsc.edu/admin/exe/>)
 
-1. binaries from <http://hgdownload.soe.ucsc.edu/admin/exe/>
-
-2. chain file from <http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz>
+Chain files from <http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz> and <http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg38ToHg19.over.chain.gz>
 
 * an active internet connexion as the program needs to connect to togows.org and uniprot.org
 

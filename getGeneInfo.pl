@@ -336,7 +336,7 @@ sub populate {
 						if ($line =~ /\t$gene_name\t/) {					
 							my @content = split(/\t/, $line);
 							#print "$gene_name-$content[$nm]\n";
-							if ($content[$nm] ne '' && $transcript_hash{"$gene_name-$content[$nm]"}) {#si on a un NM d'intérêt
+							if ($content[$nm] ne '' && $content[$chr] =~ /^chr[\dXYM]{1,2}$/ && $transcript_hash{"$gene_name-$content[$nm]"}) {#si on a un NM d'intérêt
 								my $transcript = $transcript_hash{"$gene_name-$content[$nm]"};
 								$transcript->setChr($content[$chr]);
 								$transcript->setStrand($content[$strand]);
@@ -412,11 +412,11 @@ sub populate {
 										#elsif ($genome eq 'hg38') {$prev = $segment_exon1->getEndG38()}
 										#liftover $segment_exon1 if hg19
 										if ($genome eq 'hg19') {
-											&liftover($transcript->getChr(),$segment_exon1->getStartG(), $segment_exon1->getEndG(), $strand, $segment_exon1);
+											&pyliftover($transcript->getChr(),$segment_exon1->getStartG(), $segment_exon1->getEndG(), $strand, $segment_exon1);
 											$prev = $segment_exon1->getEndG();
 										}
 										elsif ($genome eq 'hg38') {
-											&liftover($transcript->getChr(),$segment_exon1->getStartG38(), $segment_exon1->getEndG38(), $strand, $segment_exon1);
+											&pyliftover($transcript->getChr(),$segment_exon1->getStartG38(), $segment_exon1->getEndG38(), $strand, $segment_exon1);
 											$prev = $segment_exon1->getEndG38()
 										}
 										push @segments, $segment_exon1;
@@ -495,11 +495,11 @@ sub populate {
 										}
 										#liftover $segment_intron
 										if ($genome eq 'hg19') {
-											&liftover($transcript->getChr(),$segment_intron->getStartG(), $segment_intron->getEndG(), $strand, $segment_intron);
+											&pyliftover($transcript->getChr(),$segment_intron->getStartG(), $segment_intron->getEndG(), $strand, $segment_intron);
 											$prev = $segment->getEndG();
 										}
 										elsif ($genome eq 'hg38') {
-											&liftover($transcript->getChr(),$segment_intron->getStartG38(), $segment_intron->getEndG38(), $strand, $segment_intron);
+											&pyliftover($transcript->getChr(),$segment_intron->getStartG38(), $segment_intron->getEndG38(), $strand, $segment_intron);
 											$prev = $segment->getEndG38();
 										}
 										
@@ -507,8 +507,8 @@ sub populate {
 										push @segments, $segment;
 									}
 									#liftover $segment
-									if ($genome eq 'hg19') {&liftover($transcript->getChr(),$segment->getStartG(), $segment->getEndG(), $strand, $segment)}
-									if ($genome eq 'hg38') {&liftover($transcript->getChr(),$segment->getStartG38(), $segment->getEndG38(), $strand, $segment)}
+									if ($genome eq 'hg19') {&pyliftover($transcript->getChr(),$segment->getStartG(), $segment->getEndG(), $strand, $segment)}
+									if ($genome eq 'hg38') {&pyliftover($transcript->getChr(),$segment->getStartG38(), $segment->getEndG38(), $strand, $segment)}
 								}
 								#print "$segments[0]\n";
 								$segment_hash{"$gene_name-$content[$nm]"} = \@segments;
@@ -661,5 +661,50 @@ sub liftover {
 		}	
 	}
 	close T;
+}
+
+sub pyliftover {
+	my ($chr, $pos1, $pos2, $strand, $segment) = @_;
+	$pos1 = $pos1-1;
+	$pos2 = $pos2-1;
+	if ($chr =~ /^([\dXYM]{1,2})$/o) {$chr = "chr$1"}
+	#my $ret =  or die "hg38 gene mutalyzer gene only and $!";
+	#print STDERR "/usr/local/bin/python $path/liftover$way.py chr$chr $pos";
+	#my $way = 'hg38ToHg19.over.chain.gz';
+	#if ($genome eq 'hg19') {$way = 'hg19ToHg38.over.chain.gz'}
+	my ($s, $e, $chr_tmp);
+	($chr_tmp, $s) = split(/,/, `python liftover/liftover.py $LIFTOVER_CHAIN $chr $pos1`);
+	$s =~ s/\)//g;	
+	$s =~ s/ //g;
+	$s =~ s/'//g;
+	#print "-$pos1-$s-\n";
+	if ($s =~ /^\d+$/o) {$s = $s+1}
+	($chr_tmp, $e) = split(/,/, `python liftover/liftover.py $LIFTOVER_CHAIN $chr $pos2`);
+	$e =~ s/\)//g;	
+	$e =~ s/ //g;
+	$e =~ s/'//g;
+	#print "-$pos2-$e-\n";
+	if ($e =~ /^\d+$/o) {$e = $e+1}
+	#if ($strand eq '+') {
+	if ($genome eq 'hg19') {
+		$segment->setStartG38($s);
+		$segment->setEndG38($e);
+	}
+	elsif ($genome eq 'hg38') {
+		$segment->setStartG($s);
+		$segment->setEndG($e);
+	}
+	#}
+	#else {
+	#	if ($genome eq 'hg19') {
+	#		$segment->setStartG38($e);
+	#		$segment->setEndG38($s);
+	#	}
+	#	elsif ($genome eq 'hg38') {
+	#		$segment->setStartG($e);
+	#		$segment->setEndG($s);
+	#	}
+	#}
+
 }
 

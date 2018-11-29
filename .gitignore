@@ -5,6 +5,8 @@ tmp/*
 results/*
 genes.txt
 test.txt
-liftover/*
+liftover/hg*
+liftover/*i386
 data/*
 input/*
+nohup.out
