@@ -5,8 +5,8 @@ sub new {
 	my ($class, $nm, $gene) = @_;
         my $self;
 	$self = {
-                "NM"=> $nm,
-		'geneName' => $gene
+            "NM"=> $nm,
+			'geneName' => $gene
 		};
 	bless ($self, $class);
 	return $self;
@@ -42,8 +42,14 @@ sub toLOVD {
 }
 
 sub toSQL {
-	my ($self, $short_prot) = @_;
-	my $sql = "INSERT INTO domaine (nom, nom_prot, aa_deb, aa_fin) VALUES ('".$self->getName()."','".$short_prot."','".$self->getStartAA()."','".$self->getEndAA()."');\n";
+	my ($self, $short_prot, $system) = @_;
+	my $sql = '';
+	if ($system eq 'md') {
+		$sql = "INSERT INTO protein_domain (name, gene_name, aa_start, aa_end) VALUES ('".$self->getName()."','{\"".$self->getGeneName()."\",\"".$self->getNM()."\"}','".$self->getStartAA()."','".$self->getEndAA()."');\n"
+	}
+	elsif ($system eq 'u2') {
+		$sql = "INSERT INTO domaine (nom, nom_prot, aa_deb, aa_fin) VALUES ('".$self->getName()."','".$short_prot."','".$self->getStartAA()."','".$self->getEndAA()."');\n"
+	}
 	return $sql;
 }
 

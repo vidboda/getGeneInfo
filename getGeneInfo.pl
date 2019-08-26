@@ -5,6 +5,7 @@ use REST::Client;
 #use LWP::UserAgent;
 use Net::Ping;
 use File::Basename;
+use lib '.';
 use modules::transcript;
 use modules::segment;
 use modules::domain;
@@ -35,8 +36,8 @@ else {'die no MART file, you should download a biomart file with ENST, ENSP, HGN
 if (-f 'data/LRG_RefSeqGene.txt') {
 	$REFGENE = "data/LRG_RefSeqGene.txt"; #dowloaded from 	ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/RefSeqGene/LRG_RefSeqGene
 }
-if (-f 'data/HGNC_coding.txt') {
-	$HGNC_FILE = "data/HGNC_coding.txt"; #dowloaded from http://www.genenames.org/cgi-bin/statistics
+if (-f 'data/HGNC_full.txt') {
+	$HGNC_FILE = "data/HGNC_full.txt"; #dowloaded from http://www.genenames.org/cgi-bin/statistics
 }
 else {'die no refSeq file, you should download ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/RefSeqGene/LRG_RefSeqGene'}
 if (-f 'liftover/liftOver_i386') {$LIFTOVER = 'liftover/liftOver_i386'}
@@ -52,7 +53,7 @@ my $p = Net::Ping->new();
 if (!defined($p->ping("togows.org", 1))) {die "\n togows.org is not reachable, please check your internet connection\n"}
 
 my (%opts, $filename, $path, $genome, $offset, @transcript, %transcript_hash, %segment_hash, %domain_hash, %uniprot_hash);#, $gene, $segment, $domaine);
-getopts('sne:l:g:o:', \%opts);
+getopts('sne:l:g:o:d:', \%opts);
 
 if ((not exists $opts{'l'}) || ($opts{'l'} !~ /\.txt$/o) || (not exists $opts{'g'})  || $opts{'g'} !~ /hg(19|38)$/o) {
 	&HELP_MESSAGE();
@@ -74,6 +75,9 @@ else {$offset = 0}
 my $gene_counter = 0;
 my $email='';#email to put as header in UIPROT REST request
 if ($opts{'e'} && $opts{'e'} =~ /^([\w\.]+@\w+\.\w{2,3})$/o) {$email = $1}
+my $system = '';
+if ($opts{'s'} && ($opts{'d'} eq 'u2' || $opts{'d'} eq 'md')) {$system = $opts{'d'}}
+
 #prepare error file
 #open E, ">".$list."_error.txt";
 #close E;
@@ -547,7 +551,7 @@ sub main {
 	open INFO, '>results/'.$filename.'_info.txt';
 	open SUMMARY, '>results/'.$filename.'_summary.txt';
 	print SUMMARY "Gene-RefSeq\tNG AccNo\tMain Isoform\n";
-	if ($opts{'s'}) {open SQL, '>results/'.$filename.'_SQL.sql'}
+	if ($opts{'s'}) {mkdir("results/$filename")}#open SQL, ">results/'.$filename.'_SQL.sql'}
 	#if ($genome eq 'hg19' && $opts{'s'}) {open SQL, '>results/'.$filename.'_SQL.sql'}
 	#elsif ($opts{'s'}) {print "\nIgnoring SQL option -s in non hg19 context\n"}
 	foreach my $key (sort keys %transcript_hash) {	
@@ -561,7 +565,10 @@ sub main {
 		if ($obj_transcript->getChr()){#if false, rest client failed => the gene is in the error file and needs to be reran
 			print INFO $obj_transcript->toPrint();
 			#if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_transcript->toSQL()}
-			if ($opts{'s'}) {print SQL $obj_transcript->toSQL()}
+			if ($opts{'s'}) {
+				open SQL, '>results/'.$filename.'/'.$obj_transcript->getGeneName().'_SQL.sql';
+				print SQL $obj_transcript->toSQL($system);
+			}
 			my $segment_list = $segment_hash{$key};
 			if ($genome eq 'hg19') {print INFO "#Gene\tNM\tsType\tsNumber\tsName\tsSize\tsStartG\tsEndG\tsStartG38\tsEndG38\tsExonFrame\n"}
 			else {print INFO "#Gene\tNM\tsType\tsNumber\tsName\tsSize\tsStartG\tsEndG\tsExonFrame\n"}
@@ -571,7 +578,7 @@ sub main {
 				if ($obj_segment->getType() eq 'exon') {print BED $obj_segment->toBed($obj_transcript->getChr(), $obj_transcript->getStrand(), $offset)}
 				#if ($obj_segment->getType() ne 'intron') {if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_segment->toSQL()}}
 				#if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_segment->toSQL()}
-				if ($opts{'s'}) {print SQL $obj_segment->toSQL()}
+				if ($opts{'s'}) {print SQL $obj_segment->toSQL('hg19', $system);print SQL $obj_segment->toSQL('hg38', $system);}
 			}		
 			my $domain_list = $domain_hash{$key};
 			print INFO "#Gene\tNM\tdName\tdStart\tdEnd\n";
@@ -580,8 +587,9 @@ sub main {
 				print INFO $obj_domain->toPrint();			
 				print LOVD $obj_domain->toLOVD();
 				#if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_domain->toSQL($obj_transcript->getShortProt())}
-				if ($opts{'s'}) {print SQL $obj_domain->toSQL($obj_transcript->getShortProt())}
+				if ($opts{'s'}) {print SQL $obj_domain->toSQL($obj_transcript->getShortProt(), $system);}
 			}
+			if ($opts{'s'}) {close SQL}
 		}
 	}
 	close LOVD;
@@ -589,7 +597,7 @@ sub main {
 	close INFO;
 	close SUMMARY;
 	#if ($genome eq 'hg19' && $opts{'s'}) {close SQL}
-	if ($opts{'s'}) {close SQL}
+	#if ($opts{'s'}) {close SQL}
 	#bedtools to merge intervals
 	if ($BEDTOOLS) {
 		my $bed = 'results/'.$filename."_exons_$genome";

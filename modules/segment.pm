@@ -71,11 +71,21 @@ sub toBed {#start becomes start-1 as UCSC BED is 0-based for start and 1-based f
 }
 
 sub toSQL {
-	my $self = shift;
+	my ($self, $genome, $system) = @_;
 	my $exon_frame = 'NULL';
 	$exon_frame = "'".$self->getExonFrame()."'" if $self->getExonFrame();
 	if ($exon_frame eq 'zero') {$exon_frame = "'0'"}
-	my $sql = "INSERT INTO segment (nom_gene, type, numero, taille, nom, start_g, end_g, start_g_38, end_g_38, exon_frame) VALUES ('{\"".$self->getGeneName()."\",\"".$self->getNM()."\"}','".$self->getType()."','".$self->getNumber()."','".$self->getSize()."','".$self->getName()."','".$self->getStartG()."','".$self->getEndG()."','".$self->getStartG38()."','".$self->getEndG38()."',$exon_frame);\n";
+	my ($start_g, $end_g) = ($self->getStartG(), $self->getEndG());
+	if ($genome eq 'hg38') {($start_g, $end_g) = ($self->getStartG38(), $self->getEndG38())}
+	my $sql = '';
+	if ($system eq 'md') {
+		$sql = "INSERT INTO segment (genome_version, gene_name, type, number, segment_size, segment_start, segment_end, exon_frame) VALUES ('".$genome."','{\"".$self->getGeneName()."\",\"".$self->getNM()."\"}','".$self->getType()."','".$self->getNumber()."','".$self->getSize()."','".$start_g."','".$end_g."',$exon_frame);\n"
+	}
+	elsif ($system eq 'u2') {
+		$sql = "INSERT INTO segment (nom_gene, type, numero, taille, nom, start_g, end_g, start_g_38, end_g_38, exon_frame) VALUES ('{\"".$self->getGeneName()."\",\"".$self->getNM()."\"}','".$self->getType()."','".$self->getNumber()."','".$self->getSize()."','".$self->getName()."','".$self->getStartG()."','".$self->getEndG()."','".$self->getStartG38()."','".$self->getEndG38()."',$exon_frame);\n"
+	}
+	$sql =~ s/'NULL'/NULL/og;
+	$sql =~ s/'zero'/'0'/og;
 	return $sql;
 }
 #replace start_phase, end_phase from ensembl with exon_frames from ucsc in u2
