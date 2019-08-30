@@ -566,7 +566,7 @@ sub main {
 			print INFO $obj_transcript->toPrint();
 			#if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_transcript->toSQL()}
 			if ($opts{'s'}) {
-				open SQL, '>results/'.$filename.'/'.$obj_transcript->getGeneName().'_SQL.sql';
+				open SQL, '>results/'.$filename.'/'.$obj_transcript->getGeneName().'_'.$obj_transcript->getNM().'_SQL.sql';
 				print SQL $obj_transcript->toSQL($system);
 			}
 			my $segment_list = $segment_hash{$key};
