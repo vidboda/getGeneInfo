@@ -37,7 +37,7 @@ if (-f 'data/LRG_RefSeqGene.txt') {
 	$REFGENE = "data/LRG_RefSeqGene.txt"; #dowloaded from 	ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/RefSeqGene/LRG_RefSeqGene
 }
 if (-f 'data/HGNC_full.txt') {
-	$HGNC_FILE = "data/HGNC_full.txt"; #dowloaded from http://www.genenames.org/cgi-bin/statistics
+	$HGNC_FILE = "data/HGNC_full_06_2020.txt"; #downloaded from http://www.genenames.org/cgi-bin/statistics
 }
 else {'die no refSeq file, you should download ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/RefSeqGene/LRG_RefSeqGene'}
 if (-f 'liftover/liftOver_i386') {$LIFTOVER = 'liftover/liftOver_i386'}
@@ -50,7 +50,7 @@ if (!-f $BEDTOOLS) {undef $BEDTOOLS}
 
 #check togows.org availability
 my $p = Net::Ping->new();
-if (!defined($p->ping("togows.org", 1))) {die "\n togows.org is not reachable, please check your internet connection\n"}
+if (!defined($p->ping("togows.org", 1))) {die "\n togows.org is not reachable, please check your internet connection or try again later.\n"}
 
 my (%opts, $filename, $path, $genome, $offset, @transcript, %transcript_hash, %segment_hash, %domain_hash, %uniprot_hash);#, $gene, $segment, $domaine);
 getopts('sne:l:g:o:d:', \%opts);
@@ -76,6 +76,7 @@ my $gene_counter = 0;
 my $email='';#email to put as header in UIPROT REST request
 if ($opts{'e'} && $opts{'e'} =~ /^([\w\.]+@\w+\.\w{2,3})$/o) {$email = $1}
 my $system = '';
+if ($opts{'s'} && not exists $opts{'d'}) {$opts{'d'} = 'md'}
 if ($opts{'s'} && ($opts{'d'} eq 'u2' || $opts{'d'} eq 'md')) {$system = $opts{'d'}}
 
 #prepare error file
@@ -90,25 +91,25 @@ exit;
 
 sub populate {
 	open F, $path.$filename.'.txt' or die $!;
-	#my ($i, $j) = (0, 0);
+	# my ($i, $j) = (0, 0);
 	my @genes;
 	print "\nGenome: $genome\n";
-	#my $client = REST::Client->new(timeout => 10);
-	#my $ua = LWP::UserAgent->new('agent' => 'Mozilla/5.0');
-	#$ua->agent('Mozilla/5.0');
+	# my $client = REST::Client->new(timeout => 10);
+	# my $ua = LWP::UserAgent->new('agent' => 'Mozilla/5.0');
+	# $ua->agent('Mozilla/5.0');
 	local $| = 1;
 	my $iso = 1;#to count specific genes isoforms for protein names which should be unique un ushvam2
 	my $current_gene;
 	while (my $gene_name = <F>) {
-		#if (/(\w+)/o) {push @genes, $1}	
+		# if (/(\w+)/o) {push @genes, $1}	
 		chomp($gene_name);
 		if ($gene_name =~ /(\w+)/o) {
-			###Todo check HGNC ok
+			### Todo check HGNC ok
 			my $valid_hgnc = 0;
 			open H, "<$HGNC_FILE" or die "Can't find $HGNC_FILE which is supposed to be the HGNC file\n";
 			while (<H>) {
-				#print $_;
-				#print "\n".(split(/\t/, $_))[1]."\n";
+				# print $_;
+				# print "\n".(split(/\t/, $_))[1]."\n";
 				if ($gene_name eq (split(/\t/, $_))[1]) {$valid_hgnc = 1;last;}}
 			close H;
 			if ($valid_hgnc != 1) {print "\n$gene_name is not a valid HGNC gene coding name. Please check and resubmit\n";&error($gene_name);next;}
@@ -117,7 +118,7 @@ sub populate {
 			if ($current_gene ne $gene_name) {$iso = 1}
 			print "Treating $gene_name...";
 			$gene_counter++;
-			#my $gene_name = $_;
+			# my $gene_name = $_;
 			my ($i, $j, $enst, $ensp, $nm, $hgnc, $uniprot, $name) = (0, 0, 0, 0, 0, 0, 0, 0);
 			open G, "$MART" or die $!; #first file biomart file for NM, ENST, ENSP, UNIPROT, HGNC
 			print "Searching transcripts IDs...";
@@ -126,7 +127,7 @@ sub populate {
 				if ($line !~ /ENSG/o) {#look for columns
 					my @header = split(/\t/, $line);
 					foreach (@header) {#define headers positions
-						#print "$_\n";
+						# print "$_\n";
 						if (/Gene\sname/o){$name = $i}
 						elsif (/Transcript\sstable\sID/o){$enst = $i}
 						elsif (/RefSeq\smRNA\sID/o){$nm = $i}
@@ -137,7 +138,7 @@ sub populate {
 					}
 					next;
 				}
-				if ($line =~ /\s$gene_name\s/) {
+				if ($line =~ /\s$gene_name\s/ || $line =~ /\s$gene_name$/) {
 					my @content = split(/\t/, $line);
 					#print "$line\n";
 					if ($content[$nm] ne '' && !$transcript_hash{$content[$nm]}) {#unique NM
@@ -308,8 +309,13 @@ sub populate {
 			#ucsc via togows to get chr, strand, exons
 			#http://togows.org/api/ucsc/hg19/refGene/name2=actg1
 			print "Searching general infos and defining exons/introns...";
+			my $togows_gene_name = $gene_name;
+			if ($gene_name eq 'ADSSL1') {$togows_gene_name = 'ADSS1'}
 			my $togows_client = REST::Client->new(timeout => 10);
-			$togows_client->GET("http://togows.org/api/ucsc/$genome/refGene/name2=$gene_name");
+			$togows_client->GET("http://togows.org/api/ucsc/$genome/refGene/name2=$togows_gene_name");
+			#voir http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz pour avoir une copie locale???
+			#http://api.genome.ucsc.edu/getData/track?genome=hg38;track=refGene;maxItemsOutput=5
+			#l'API UCSC ne permet pas de requêter sur un gène précis???
 			if ($togows_client->responseCode() == 200) {
 				my ($chr, $strand, $txstart, $txend, $cdsstart, $cdsend, $exon_count, $exon_start, $exon_end, $exon_frames);
 				$i = 0;
@@ -337,7 +343,7 @@ sub populate {
 						next;
 					}
 					else {
-						if ($line =~ /\t$gene_name\t/) {					
+						if ($line =~ /\t$togows_gene_name\t/) {					
 							my @content = split(/\t/, $line);
 							#print "$gene_name-$content[$nm]\n";
 							if ($content[$nm] ne '' && $content[$chr] =~ /^chr[\dXYM]{1,2}$/ && $transcript_hash{"$gene_name-$content[$nm]"}) {#si on a un NM d'intérêt
@@ -615,7 +621,8 @@ sub HELP_MESSAGE {
 ### -g genome version, hg19/hg38
 ### -n considers genes without NCBI NG accession number
 ### -o offset supplementary region to be applied to BED file (numerical, in bp)
-### -s generates SQL files for USHVaM2 (https://neuro-2.iurc.montp.inserm.fr/usher), hg19 only
+### -s generates SQL files for USHVaM2 or MobiDetails, see -d 
+### -d <u2|md>, in combination with -s, provides db type: u2|md
 ### see README.md for installation instructions
 ### contact: david.baux\@inserm.fr\n\n"
 }
