@@ -32,16 +32,16 @@ my ($MART, $REFGENE, $HGNC_FILE, $LIFTOVER, $LIFTOVER_CHAIN);
 if (-f 'data/mart_export.txt') {
 	$MART = "data/mart_export.txt"; #http://www.ensembl.org/biomart/martview/ format: Gene stable ID	Transcript stable ID	Gene name	RefSeq mRNA ID	Protein stable ID	HGNC ID	UniProtKB Gene Name ID
 }
-else {'die no MART file, you should download a biomart file with ENST, ENSP, HGNCid, RefSeq NM, UNIPROT'}
+else {die 'no MART file, you should download a biomart file with ENST, ENSP, HGNCid, RefSeq NM, UNIPROT'}
 if (-f 'data/LRG_RefSeqGene.txt') {
 	$REFGENE = "data/LRG_RefSeqGene.txt"; #dowloaded from 	ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/RefSeqGene/LRG_RefSeqGene
 }
-if (-f 'data/HGNC_full.txt') {
+if (-f 'data/HGNC_full_06_2020.txt') {
 	$HGNC_FILE = "data/HGNC_full_06_2020.txt"; #downloaded from http://www.genenames.org/cgi-bin/statistics
 }
-else {'die no refSeq file, you should download ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/RefSeqGene/LRG_RefSeqGene'}
-if (-f 'liftover/liftOver_i386') {$LIFTOVER = 'liftover/liftOver_i386'}
-else {'die no liftover binary, you should download one for your system at UCSC http://hgdownload.soe.ucsc.edu/admin/exe/'}
+else {die 'no refSeq file, you should download ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/RefSeqGene/LRG_RefSeqGene'}
+if (-f 'liftover/liftOver') {$LIFTOVER = 'liftover/liftOver'}
+else {die 'no liftover binary, you should download one for your system at UCSC http://hgdownload.soe.ucsc.edu/admin/exe/'}
 if (! -d 'results') {mkdir('results', '0755')}
 if (! -d 'tmp') {mkdir('tmp', '0755')}
 
@@ -66,9 +66,9 @@ if ($opts{'l'}) {($filename, $path) = fileparse($opts{'l'}, qr/\.[^.]*/)}
 if ($opts{'g'} =~ /hg(19|38)/) {$genome = "hg$1"}
 
 if ($genome eq 'hg19' && -f 'liftover/hg19ToHg38.over.chain.gz') {$LIFTOVER_CHAIN = 'liftover/hg19ToHg38.over.chain.gz'}
-else {'die no liftover hg19238 chain, you should download one at UCSC http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz'}
+else {die 'no liftover hg19238 chain, you should download one at UCSC http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz'}
 if ($genome eq 'hg38' && -f 'liftover/hg19ToHg38.over.chain.gz') {$LIFTOVER_CHAIN = 'liftover/hg38ToHg19.over.chain.gz'}
-else {'die no liftover hg38219 chain, you should download one at UCSC http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg38ToHg19.over.chain.gz'}
+else {die 'no liftover hg38219 chain, you should download one at UCSC http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg38ToHg19.over.chain.gz'}
 
 if ($opts{'o'} && $opts{'o'} =~ /(\d+)/o) {$offset = $1}
 else {$offset = 0}
