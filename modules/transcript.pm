@@ -6,23 +6,23 @@ use strict;
 #nom, second_name, chr, brin, nbre_exons, nom_prot, short_prot, taille_prot, uniprot_id, acc_version, gi_NM, acc_g, gi_NG, acc_p, gi_NP, ENST, ENSP,  translation_start_site, mutalyzer_version, main, USHER, RP, DFN, "MiSeq-28", "MiSeq-112", "MiSeq-121", "MiSeq-132", "MiSeq-3", "MiniSeq-3",  "MiniSeq-121", "MiniSeq-132"
 #need new attributes EXTENDED_DFN et "NextSeq-ClinicalExome"
 
-sub new { #constructeur 
+sub new { #constructeur
         my ($class, $nm) = @_;
         my $self;
         if (!defined($nm)) {die "you must provide a name (NM)!!!"}
         else {
 		$self = {
-                        'nm' => $nm,
+      'nm' => $nm,
 			'second_name' => 'NULL',
 			'ng' => 'NG_000000.0',
 			'np' => 'NP_000000.0',
 			'nm_version' => '1',
 			'main' => 'f',
 			'mutal' => '_v001',
-                        'USHER' => 'f',
-                        'RP' => 'f',
-                        'DFN' => 'f',
-                        'EXTENDED_DFN' => 'f',
+      'USHER' => 'f',
+      'RP' => 'f',
+      'DFN' => 't',
+      'EXTENDED_DFN' => 'f',
 			'"MiSeq-28"' => 'f',
 			'"MiSeq-112"' => 'f',
 			'"MiSeq-121"' => 'f',
@@ -33,8 +33,9 @@ sub new { #constructeur
 			'"MiniSeq-132"' => 'f',
 			'"MiniSeq-152"' => 'f',
 			'"MiniSeq-158"' => 'f',
+      '"MiniSeq-149"' => 't',
 			'"NextSeq-ClinicalExome"' => 'f',
-			'ns_gene' => 'f',
+			'ns_gene' => 't',
 		};
         }
 	bless ($self, $class);
@@ -125,7 +126,7 @@ sub getHGNC {my $self = shift;return $self->{hgnc}}
 sub isMito {
 	my $self = shift;
 	if ($self->getChr() =~ /M/) {return 't'}
-	else {return 'f'}	
+	else {return 'f'}
 }
 sub toPrint {
 	my $self = shift;
@@ -138,13 +139,13 @@ sub toSQL {
 	my ($self, $system) = @_;
 	my $chr = $self->getChr();
 	$chr =~ s/chr//o;
-	
+
 	my $sql = '';
 	if ($system eq 'md') {
 		$sql = "INSERT INTO gene (name, second_name, chr, strand, number_of_exons, prot_name, prot_short, prot_size, uniprot_id, nm_version, ng, np, enst, ensp, canonical) VALUES ( '{\"".$self->getGeneName()."\",\"".$self->getNM()."\"}','".$self->getSecondName()."','".$chr."','".$self->getStrand()."','".$self->getNbExons()."','".$self->getProtName()."','".$self->getShortProt()."','".$self->getProtSize()."','".$self->getUniprot()."','".$self->getNMVersion()."','".$self->getNG()."','".$self->getNP()."','".$self->getENST()."','".$self->getENSP()."','".$self->getMain()."');\n"
 	}
 	elsif ($system eq 'u2') {
-		$sql = "INSERT INTO gene (nom, second_name, chr, brin, nbre_exons, nom_prot, short_prot, taille_prot, uniprot_id, acc_version, gi_nm, acc_g, gi_ng, acc_p, gi_np, enst, ensp,  translation_start_site, mutalyzer_version, main, usher, rp, dfn, extended_ns, \"MiSeq-28\", \"MiSeq-112\", \"MiSeq-121\", \"MiSeq-132\", \"MiSeq-3\", \"MiniSeq-3\", \"MiniSeq-121\", \"MiniSeq-132\", \"NextSeq-ClinicalExome\", \"MiniSeq-152\", \"mito\", \"ns_gene\") VALUES ( '{\"".$self->getGeneName()."\",\"".$self->getNM()."\"}','".$self->getSecondName()."','".$chr."','".$self->getStrand()."','".$self->getNbExons()."','".$self->getProtName()."','".$self->getShortProt()."','".$self->getProtSize()."','".$self->getUniprot()."','".$self->getNMVersion()."',NULL,'".$self->getNG()."',NULL,'".$self->getNP()."',NULL,'".$self->getENST()."','".$self->getENSP()."','".$self->getTss()."','".$self->getMutalyzerVer()."','".$self->getMain()."','".$self->getUsh()."','".$self->getRP()."','".$self->getDfn()."','".$self->getExtDfn()."','".$self->getMS28()."','".$self->getMS112()."','".$self->getMS121()."','".$self->getMS132()."','".$self->getMS3()."','".$self->getMnS3()."','".$self->getMnS121()."','".$self->getMnS132()."','".$self->getNxTSqCE()."', '".$self->getMnS152()."', '".$self->getMnS158()."', '".$self->isMito()."', '".$self->getNsGene()."');\n"
+		$sql = "INSERT INTO gene (nom, second_name, chr, brin, nbre_exons, nom_prot, short_prot, taille_prot, uniprot_id, acc_version, gi_nm, acc_g, gi_ng, acc_p, gi_np, enst, ensp,  translation_start_site, mutalyzer_version, main, usher, rp, dfn, extended_ns, \"MiSeq-28\", \"MiSeq-112\", \"MiSeq-121\", \"MiSeq-132\", \"MiSeq-3\", \"MiniSeq-3\", \"MiniSeq-121\", \"MiniSeq-132\", \"NextSeq-ClinicalExome\", \"MiniSeq-152\", \"MiniSeq-158\", \"MiniSeq-149\", \"mito\", \"ns_gene\") VALUES ( '{\"".$self->getGeneName()."\",\"".$self->getNM()."\"}','".$self->getSecondName()."','".$chr."','".$self->getStrand()."','".$self->getNbExons()."','".$self->getProtName()."','".$self->getShortProt()."','".$self->getProtSize()."','".$self->getUniprot()."','".$self->getNMVersion()."',NULL,'".$self->getNG()."',NULL,'".$self->getNP()."',NULL,'".$self->getENST()."','".$self->getENSP()."','".$self->getTss()."','".$self->getMutalyzerVer()."','".$self->getMain()."','".$self->getUsh()."','".$self->getRP()."','".$self->getDfn()."','".$self->getExtDfn()."','".$self->getMS28()."','".$self->getMS112()."','".$self->getMS121()."','".$self->getMS132()."','".$self->getMS3()."','".$self->getMnS3()."','".$self->getMnS121()."','".$self->getMnS132()."','".$self->getNxTSqCE()."', '".$self->getMnS152()."', '".$self->getMnS158()."', 't', '".$self->isMito()."', '".$self->getNsGene()."');\n"
 	}
 	return $sql;
 }

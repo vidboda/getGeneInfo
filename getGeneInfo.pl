@@ -65,10 +65,14 @@ if ($opts{'l'}) {($filename, $path) = fileparse($opts{'l'}, qr/\.[^.]*/)}
 #elsif ($opts{'l'} =~ /^([^\/]+)\.txt$/o) {$list = $1; $path = $list}
 if ($opts{'g'} =~ /hg(19|38)/) {$genome = "hg$1"}
 
-if ($genome eq 'hg19' && -f 'liftover/hg19ToHg38.over.chain.gz') {$LIFTOVER_CHAIN = 'liftover/hg19ToHg38.over.chain.gz'}
-else {die 'no liftover hg19238 chain, you should download one at UCSC http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz'}
-if ($genome eq 'hg38' && -f 'liftover/hg19ToHg38.over.chain.gz') {$LIFTOVER_CHAIN = 'liftover/hg38ToHg19.over.chain.gz'}
-else {die 'no liftover hg38219 chain, you should download one at UCSC http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg38ToHg19.over.chain.gz'}
+if ($genome eq 'hg19') {
+	if (-f 'liftover/hg19ToHg38.over.chain.gz') {$LIFTOVER_CHAIN = 'liftover/hg19ToHg38.over.chain.gz'}
+	else {die 'no liftover hg19238 chain, you should download one at UCSC http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz'}
+}
+if ($genome eq 'hg38') {
+	if (-f 'liftover/hg38ToHg19.over.chain.gz') {$LIFTOVER_CHAIN = 'liftover/hg38ToHg19.over.chain.gz'}
+	else {die 'no liftover hg38219 chain, you should download one at UCSC http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg38ToHg19.over.chain.gz'}
+}
 
 if ($opts{'o'} && $opts{'o'} =~ /(\d+)/o) {$offset = $1}
 else {$offset = 0}
@@ -101,7 +105,7 @@ sub populate {
 	my $iso = 1;#to count specific genes isoforms for protein names which should be unique un ushvam2
 	my $current_gene;
 	while (my $gene_name = <F>) {
-		# if (/(\w+)/o) {push @genes, $1}	
+		# if (/(\w+)/o) {push @genes, $1}
 		chomp($gene_name);
 		if ($gene_name =~ /(\w+)/o) {
 			### Todo check HGNC ok
@@ -113,8 +117,8 @@ sub populate {
 				if ($gene_name eq (split(/\t/, $_))[1]) {$valid_hgnc = 1;last;}}
 			close H;
 			if ($valid_hgnc != 1) {print "\n$gene_name is not a valid HGNC gene coding name. Please check and resubmit\n";&error($gene_name);next;}
-			
-			if ($iso == 1) {$current_gene = $gene_name}			
+
+			if ($iso == 1) {$current_gene = $gene_name}
 			if ($current_gene ne $gene_name) {$iso = 1}
 			print "Treating $gene_name...";
 			$gene_counter++;
@@ -155,20 +159,20 @@ sub populate {
 									#print $hgnc_data[8];
 									if (length $hgnc_data[8] < 21) {$transcript->setSecondName($hgnc_data[8])}
 									else {$transcript->setSecondName(substr($hgnc_data[8], 0, 20))}
-								}						
+								}
 								#first occurence of Uniprot ID - is also checked in mart export
 								if ($hgnc_data[25] =~ /([\w]{6})$/o) {$transcript->setUniprot($1)}
 							}
-						}					
+						}
 						$transcript->setGeneName($content[$name]);
-						
+
 						#if ($content[$uniprot] && $content[$uniprot] ne '') {
 						if ($content[$uniprot] && length($content[$uniprot]) == 6 || $transcript->getUniprot() ne '') {#swissprot only
 							#print "$content[$uniprot]\n";
 							if ($transcript->getUniprot() eq '') {$transcript->setUniprot($content[$uniprot])}
 							#get info from UNIPROT and create domain objs
 							#my $response = $ua->get('http://www.uniprot.org/uniprot/'.$transcript->getUniprot().'.txt');
-							
+
 							my (@domains, $data);
 							if (! defined($uniprot_hash{$transcript->getUniprot()})) {
 								my $uniprot_code = $transcript->getUniprot();
@@ -186,7 +190,7 @@ sub populate {
 									#$data = $response->decoded_content();
 									###$data = $uniprot_client->responseContent();
 									###$uniprot_hash{$transcript->getUniprot()} = $data;
-									
+
 								###}
 								###else {
 									#print "\nUNIPROT did not respond for ".$transcript->getGeneName()."-".$transcript->getNM()." (UNIPROT ID ".$transcript->getUniprot()."): ".$response->status_line()."\n"
@@ -199,7 +203,7 @@ sub populate {
 							$short_prot =~ s/'/'\''/og;
 							if ($iso > 1) {$short_prot .= " ($iso)"}
 							if ($data) {
-								my @uniprot = split(/\n/, $data);								
+								my @uniprot = split(/\n/, $data);
 								foreach (@uniprot) {
 									#print $_;
 									if (/^ID\s+\w+\s+\w+\;\s+(\d+)\sAA\./o) {$transcript->setProtSize($1)}
@@ -221,16 +225,16 @@ sub populate {
 											}
 											$dom_name =~ s/ \(Potential\)//og;
 											my $domain = domain->new($transcript->getNM(), $gene_name);
-											
+
 											$domain->setName($dom_name);
 											$domain->setStartAA($start_aa);
 											$domain->setEndAA($end_aa);
 											push @domains, $domain;
 										}
-										
+
 									}
 								}
-								if((!$transcript->getProtName()))  {									
+								if((!$transcript->getProtName()))  {
 									$transcript->setProtName($short_prot);
 									$transcript->setShortProt($short_prot);
 								}
@@ -261,7 +265,7 @@ sub populate {
 				}
 			}
 			close G;
-			
+
 			$iso++;
 			if ($j == 0) {&error($gene_name)}
 			my ($ng, $np, $main, $nm_ver, $actual_nm);
@@ -290,7 +294,7 @@ sub populate {
 					if ($complete_nm =~ /(N[RM]_\d+)\.(\d)/o) {
 						#print $complete_nm;exit;
 						($actual_nm, $nm_ver) = ($1, $2);
-						if ($content[$nm] ne '' && $transcript_hash{"$gene_name-$actual_nm"}) {#si on a un NM d'intérêt
+						if ($content[$nm] ne '' && $transcript_hash{"$gene_name-$actual_nm"}) {#si on a un NM d'intï¿½rï¿½t
 							my $transcript = $transcript_hash{"$gene_name-$actual_nm"};
 							$transcript->setNG($content[$ng]);
 							$transcript->setNP($content[$np]);
@@ -315,14 +319,14 @@ sub populate {
 			$togows_client->GET("http://togows.org/api/ucsc/$genome/refGene/name2=$togows_gene_name");
 			#voir http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz pour avoir une copie locale???
 			#http://api.genome.ucsc.edu/getData/track?genome=hg38;track=refGene;maxItemsOutput=5
-			#l'API UCSC ne permet pas de requêter sur un gène précis???
+			#l'API UCSC ne permet pas de requï¿½ter sur un gï¿½ne prï¿½cis???
 			if ($togows_client->responseCode() == 200) {
 				my ($chr, $strand, $txstart, $txend, $cdsstart, $cdsend, $exon_count, $exon_start, $exon_end, $exon_frames);
 				$i = 0;
 				undef($nm);
 				push my @info, split(/\n/, $togows_client->responseContent());
 				foreach my $line (@info)	{
-					#print "$line--------\n";		
+					#print "$line--------\n";
 					if ($line =~ /bin/o) {
 						my @header = split(/\t/, $line);
 						foreach (@header) {#define headers positions
@@ -343,10 +347,10 @@ sub populate {
 						next;
 					}
 					else {
-						if ($line =~ /\t$togows_gene_name\t/) {					
+						if ($line =~ /\t$togows_gene_name\t/) {
 							my @content = split(/\t/, $line);
 							#print "$gene_name-$content[$nm]\n";
-							if ($content[$nm] ne '' && $content[$chr] =~ /^chr[\dXYM]{1,2}$/ && $transcript_hash{"$gene_name-$content[$nm]"}) {#si on a un NM d'intérêt
+							if ($content[$nm] ne '' && $content[$chr] =~ /^chr[\dXYM]{1,2}$/ && $transcript_hash{"$gene_name-$content[$nm]"}) {#si on a un NM d'intï¿½rï¿½t
 								my $transcript = $transcript_hash{"$gene_name-$content[$nm]"};
 								$transcript->setChr($content[$chr]);
 								$transcript->setStrand($content[$strand]);
@@ -368,7 +372,7 @@ sub populate {
 								my ($k, $prev) = (0, 0);#$prev is meant to keep in memory the last relevant nuc position to create intronic objects
 								my @segments;
 								for ($k = 0;$k <= $transcript->getNbExons();$k++) {
-									my ($start, $end);									
+									my ($start, $end);
 									my $strand = $transcript->getStrand();
 									if ($k != $transcript->getNbExons()) {
 										($start, $end) = ($exon_start[$k]+1, $exon_end[$k]);#ucsc is 0-based for start and 1-based for end
@@ -402,7 +406,7 @@ sub populate {
 										}
 										$segment->setSize(2000);
 										push @segments, $segment;
-										
+
 										my $segment_exon1 = segment->new($content[$nm], $gene_name);
 										$segment_exon1->setNumber('1');
 										$segment_exon1->setType('exon');
@@ -414,7 +418,7 @@ sub populate {
 											$segment_exon1->setStartG38($start);
 											$segment_exon1->setEndG38($end);
 										}
-										
+
 										$segment_exon1->setExonFrame($exon_frames[$k]);
 										if ($strand eq '+') {$segment_exon1->setSize($end-$start+1)}
 										else {$segment_exon1->setSize($start-$end+1)}
@@ -473,7 +477,7 @@ sub populate {
 										}
 										$segment->setExonFrame($exon_frames[$k]);
 										#print $segment->getExonFrame();
-										
+
 										my $segment_intron = segment->new($content[$nm], $gene_name);
 										$segment_intron->setNumber($k);
 										if ($strand eq '+') {
@@ -487,7 +491,7 @@ sub populate {
 												$segment_intron->setStartG38($prev+1);
 												$segment_intron->setEndG38($segment->getStartG38()-1);
 												$segment_intron->setSize($segment->getEndG38()-$prev+1);
-											}											
+											}
 										}
 										else {
 											$segment->setSize($start-$end+1);
@@ -501,7 +505,7 @@ sub populate {
 												$segment_intron->setEndG38($segment->getStartG38()+1);
 												$segment_intron->setSize($prev-1-$segment->getStartG38());
 											}
-											
+
 										}
 										#liftover $segment_intron
 										if ($genome eq 'hg19') {
@@ -512,7 +516,7 @@ sub populate {
 											&pyliftover($transcript->getChr(),$segment_intron->getStartG38(), $segment_intron->getEndG38(), $strand, $segment_intron);
 											$prev = $segment->getEndG38();
 										}
-										
+
 										push @segments, $segment_intron;
 										push @segments, $segment;
 									}
@@ -522,7 +526,7 @@ sub populate {
 								}
 								#print "$segments[0]\n";
 								$segment_hash{"$gene_name-$content[$nm]"} = \@segments;
-								
+
 								#####put here toBed toSQL for segments
 								#open BED, '>>'.$list."_exons_$genome.bed";
 								#foreach my $seg (@segments) {
@@ -560,7 +564,7 @@ sub main {
 	if ($opts{'s'}) {mkdir("results/$filename")}#open SQL, ">results/'.$filename.'_SQL.sql'}
 	#if ($genome eq 'hg19' && $opts{'s'}) {open SQL, '>results/'.$filename.'_SQL.sql'}
 	#elsif ($opts{'s'}) {print "\nIgnoring SQL option -s in non hg19 context\n"}
-	foreach my $key (sort keys %transcript_hash) {	
+	foreach my $key (sort keys %transcript_hash) {
 	#foreach my $obj (@transcript) {
 		#$key =~ /(\w+)-(N[RM]_\d+)/o;
 		#my ($gene, $nm) = ($1, $2);
@@ -578,19 +582,22 @@ sub main {
 			my $segment_list = $segment_hash{$key};
 			if ($genome eq 'hg19') {print INFO "#Gene\tNM\tsType\tsNumber\tsName\tsSize\tsStartG\tsEndG\tsStartG38\tsEndG38\tsExonFrame\n"}
 			else {print INFO "#Gene\tNM\tsType\tsNumber\tsName\tsSize\tsStartG\tsEndG\tsExonFrame\n"}
-			####put here toBed toSQL for segments		
+			####put here toBed toSQL for segments
 			foreach my $obj_segment (@{$segment_list}) {
 				print INFO $obj_segment->toPrint();
 				if ($obj_segment->getType() eq 'exon') {print BED $obj_segment->toBed($obj_transcript->getChr(), $obj_transcript->getStrand(), $offset)}
 				#if ($obj_segment->getType() ne 'intron') {if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_segment->toSQL()}}
 				#if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_segment->toSQL()}
-				if ($opts{'s'}) {print SQL $obj_segment->toSQL('hg19', $system);print SQL $obj_segment->toSQL('hg38', $system);}
-			}		
+				if ($opts{'s'}) {
+					if ($system eq 'u2') {print SQL $obj_segment->toSQL('hg19', $system)}
+					else {print SQL $obj_segment->toSQL('hg19', $system);print SQL $obj_segment->toSQL('hg38', $system);}
+				}
+			}
 			my $domain_list = $domain_hash{$key};
 			print INFO "#Gene\tNM\tdName\tdStart\tdEnd\n";
 			print LOVD "#".$obj_transcript->getGeneName()."--".$obj_transcript->getProtName()."\n";
 			foreach my $obj_domain (@{$domain_list}) {
-				print INFO $obj_domain->toPrint();			
+				print INFO $obj_domain->toPrint();
 				print LOVD $obj_domain->toLOVD();
 				#if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_domain->toSQL($obj_transcript->getShortProt())}
 				if ($opts{'s'}) {print SQL $obj_domain->toSQL($obj_transcript->getShortProt(), $system);}
@@ -621,7 +628,7 @@ sub HELP_MESSAGE {
 ### -g genome version, hg19/hg38
 ### -n considers genes without NCBI NG accession number
 ### -o offset supplementary region to be applied to BED file (numerical, in bp)
-### -s generates SQL files for USHVaM2 or MobiDetails, see -d 
+### -s generates SQL files for USHVaM2 or MobiDetails, see -d
 ### -d <u2|md>, in combination with -s, provides db type: u2|md
 ### see README.md for installation instructions
 ### contact: david.baux\@inserm.fr\n\n"
@@ -673,7 +680,7 @@ sub liftover {
 					$segment->setEndG($1);
 				}
 			}
-		}	
+		}
 	}
 	close T;
 }
@@ -689,13 +696,13 @@ sub pyliftover {
 	#if ($genome eq 'hg19') {$way = 'hg19ToHg38.over.chain.gz'}
 	my ($s, $e, $chr_tmp);
 	($chr_tmp, $s) = split(/,/, `python liftover/liftover.py $LIFTOVER_CHAIN $chr $pos1`);
-	$s =~ s/\)//g;	
+	$s =~ s/\)//g;
 	$s =~ s/ //g;
 	$s =~ s/'//g;
 	#print "-$pos1-$s-\n";
 	if ($s =~ /^\d+$/o) {$s = $s+1}
 	($chr_tmp, $e) = split(/,/, `python liftover/liftover.py $LIFTOVER_CHAIN $chr $pos2`);
-	$e =~ s/\)//g;	
+	$e =~ s/\)//g;
 	$e =~ s/ //g;
 	$e =~ s/'//g;
 	#print "-$pos2-$e-\n";
@@ -722,4 +729,3 @@ sub pyliftover {
 	#}
 
 }
-
