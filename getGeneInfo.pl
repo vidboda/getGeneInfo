@@ -312,11 +312,15 @@ sub populate {
 			$j = 0;
 			#ucsc via togows to get chr, strand, exons
 			#http://togows.org/api/ucsc/hg19/refGene/name2=actg1
+			# refGene => UCSC RefSeq
+			# ncbiRefSeq => NCBI RefSeq
+			# for future improvments:
+			# also available ncbirefSeqCurated, ncbiRefSeqSelect => pour déterminer le main
 			print "Searching general infos and defining exons/introns...";
 			my $togows_gene_name = $gene_name;
 			if ($gene_name eq 'ADSSL1') {$togows_gene_name = 'ADSS1'}
 			my $togows_client = REST::Client->new(timeout => 10);
-			$togows_client->GET("http://togows.org/api/ucsc/$genome/refGene/name2=$togows_gene_name");
+			$togows_client->GET("http://togows.org/api/ucsc/$genome/ncbiRefSeq/name2=$togows_gene_name");
 			#voir http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz pour avoir une copie locale???
 			#http://api.genome.ucsc.edu/getData/track?genome=hg38;track=refGene;maxItemsOutput=5
 			#l'API UCSC ne permet pas de requ�ter sur un g�ne pr�cis???
@@ -324,13 +328,14 @@ sub populate {
 				my ($chr, $strand, $txstart, $txend, $cdsstart, $cdsend, $exon_count, $exon_start, $exon_end, $exon_frames);
 				$i = 0;
 				undef($nm);
+				# print $togows_client->responseContent()."\n";
 				push my @info, split(/\n/, $togows_client->responseContent());
 				foreach my $line (@info)	{
-					#print "$line--------\n";
+					# print "$line--------\n";
 					if ($line =~ /bin/o) {
 						my @header = split(/\t/, $line);
 						foreach (@header) {#define headers positions
-							#print "$_\n";
+							# print "$_\n";
 							if (/name$/o){$nm = $i}
 							elsif (/chrom$/o){$chr = $i}
 							elsif (/strand$/o){$strand = $i}
@@ -349,13 +354,18 @@ sub populate {
 					else {
 						if ($line =~ /\t$togows_gene_name\t/) {
 							my @content = split(/\t/, $line);
-							#print "$gene_name-$content[$nm]\n";
-							if ($content[$nm] ne '' && $content[$chr] =~ /^chr[\dXYM]{1,2}$/ && $transcript_hash{"$gene_name-$content[$nm]"}) {#si on a un NM d'int�r�t
-								my $transcript = $transcript_hash{"$gene_name-$content[$nm]"};
+							# refGene table (UCSC refseq)
+							my $togows_nm = $content[$nm];
+							# ncbiRefSeq table
+							if ($content[$nm] =~ /(NM_\d+)\.\d{1,2}$/o) {$togows_nm = $1}
+
+							# print "$gene_name-$togows_nm\n";
+							if ($togows_nm ne '' && $content[$chr] =~ /^chr[\dXYM]{1,2}$/ && $transcript_hash{"$gene_name-$togows_nm"}) {#si on a un NM d'int�r�t
+								my $transcript = $transcript_hash{"$gene_name-$togows_nm"};
 								$transcript->setChr($content[$chr]);
 								$transcript->setStrand($content[$strand]);
 								$transcript->setNbExons($content[$exon_count]);
-								#my ($pos1, $pos2) = ($content[$txstart], $content[$cdsstart]);
+								# my ($pos1, $pos2) = ($content[$txstart], $content[$cdsstart]);
 								my (@exon_start, @exon_end, @exon_frames);
 								if ($transcript->getStrand() eq '+') {
 									$transcript->setTss(($content[$cdsstart]-$content[$txstart]+1));
@@ -378,7 +388,7 @@ sub populate {
 										($start, $end) = ($exon_start[$k]+1, $exon_end[$k]);#ucsc is 0-based for start and 1-based for end
 										if ($strand eq '-') {($start, $end) = ($exon_start[$k], $exon_end[$k]+1)}
 									}
-									my $segment = segment->new($content[$nm], $gene_name);
+									my $segment = segment->new($togows_nm, $gene_name);
 									if ($k == 0) {
 										#UTR5-exon1
 										$segment->setType('5UTR');
@@ -407,7 +417,7 @@ sub populate {
 										$segment->setSize(2000);
 										push @segments, $segment;
 
-										my $segment_exon1 = segment->new($content[$nm], $gene_name);
+										my $segment_exon1 = segment->new($togows_nm, $gene_name);
 										$segment_exon1->setNumber('1');
 										$segment_exon1->setType('exon');
 										if ($genome eq 'hg19') {
@@ -478,7 +488,7 @@ sub populate {
 										$segment->setExonFrame($exon_frames[$k]);
 										#print $segment->getExonFrame();
 
-										my $segment_intron = segment->new($content[$nm], $gene_name);
+										my $segment_intron = segment->new($togows_nm, $gene_name);
 										$segment_intron->setNumber($k);
 										if ($strand eq '+') {
 											$segment->setSize($end-$start+1);
@@ -525,7 +535,7 @@ sub populate {
 									if ($genome eq 'hg38') {&pyliftover($transcript->getChr(),$segment->getStartG38(), $segment->getEndG38(), $strand, $segment)}
 								}
 								#print "$segments[0]\n";
-								$segment_hash{"$gene_name-$content[$nm]"} = \@segments;
+								$segment_hash{"$gene_name-$togows_nm"} = \@segments;
 
 								#####put here toBed toSQL for segments
 								#open BED, '>>'.$list."_exons_$genome.bed";
