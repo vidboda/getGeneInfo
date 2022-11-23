@@ -78,7 +78,7 @@ sub toSQL {
 	my ($start_g, $end_g) = ($self->getStartG(), $self->getEndG());
 	if ($genome eq 'hg38') {($start_g, $end_g) = ($self->getStartG38(), $self->getEndG38())}
 	my $sql = '';
-	if ($system eq 'md') {
+	if ($system eq 'md') { # deprecated
 		$sql = "INSERT INTO segment (genome_version, gene_name, type, number, segment_size, segment_start, segment_end, exon_frame) VALUES ('".$genome."','{\"".$self->getGeneName()."\",\"".$self->getNM()."\"}','".$self->getType()."','".$self->getNumber()."','".$self->getSize()."','".$start_g."','".$end_g."',$exon_frame);\n"
 	}
 	elsif ($system eq 'u2') {
