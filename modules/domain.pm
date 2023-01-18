@@ -44,7 +44,7 @@ sub toLOVD {
 sub toSQL {
 	my ($self, $short_prot, $system) = @_;
 	my $sql = '';
-	if ($system eq 'md') {
+	if ($system eq 'md') { # deprecated
 		$sql = "INSERT INTO protein_domain (name, gene_name, aa_start, aa_end) VALUES ('".$self->getName()."','{\"".$self->getGeneName()."\",\"".$self->getNM()."\"}','".$self->getStartAA()."','".$self->getEndAA()."');\n"
 	}
 	elsif ($system eq 'u2') {
