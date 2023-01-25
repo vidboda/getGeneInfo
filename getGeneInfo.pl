@@ -323,7 +323,7 @@ sub populate {
 			$togows_client->GET("http://togows.org/api/ucsc/$genome/ncbiRefSeq/name2=$togows_gene_name");
 			#voir http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz pour avoir une copie locale???
 			#http://api.genome.ucsc.edu/getData/track?genome=hg38;track=refGene;maxItemsOutput=5
-			#l'API UCSC ne permet pas de requ�ter sur un g�ne pr�cis???
+			#l'API UCSC ne permet pas de requêter sur un gène précis???
 			if ($togows_client->responseCode() == 200) {
 				my ($chr, $strand, $txstart, $txend, $cdsstart, $cdsend, $exon_count, $exon_start, $exon_end, $exon_frames);
 				$i = 0;
@@ -360,7 +360,7 @@ sub populate {
 							if ($content[$nm] =~ /(NM_\d+)\.\d{1,2}$/o) {$togows_nm = $1}
 
 							# print "$gene_name-$togows_nm\n";
-							if ($togows_nm ne '' && $content[$chr] =~ /^chr[\dXYM]{1,2}$/ && $transcript_hash{"$gene_name-$togows_nm"}) {#si on a un NM d'int�r�t
+							if ($togows_nm ne '' && $content[$chr] =~ /^chr[\dXYM]{1,2}$/ && $transcript_hash{"$gene_name-$togows_nm"}) {#si on a un NM d'intérêt
 								my $transcript = $transcript_hash{"$gene_name-$togows_nm"};
 								$transcript->setChr($content[$chr]);
 								$transcript->setStrand($content[$strand]);
@@ -595,7 +595,7 @@ sub main {
 			####put here toBed toSQL for segments
 			foreach my $obj_segment (@{$segment_list}) {
 				print INFO $obj_segment->toPrint();
-				if ($obj_segment->getType() eq 'exon') {print BED $obj_segment->toBed($obj_transcript->getChr(), $obj_transcript->getStrand(), $offset)}
+				if ($obj_segment->getType() eq 'exon') {print BED $obj_segment->toBed($genome, $obj_transcript->getChr(), $obj_transcript->getStrand(), $offset)}
 				#if ($obj_segment->getType() ne 'intron') {if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_segment->toSQL()}}
 				#if ($genome eq 'hg19' && $opts{'s'}) {print SQL $obj_segment->toSQL()}
 				if ($opts{'s'}) {

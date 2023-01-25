@@ -65,9 +65,13 @@ sub toPrint {
 
 
 sub toBed {#start becomes start-1 as UCSC BED is 0-based for start and 1-based for end
-	my ($self, $chr, $strand, $offset) = @_;
-	if ($strand eq '+') {return "$chr\t".($self->getStartG()-$offset-1)."\t".($self->getEndG()+$offset)."\t".$self->getGeneName().":".$self->getNM().'-'.$self->getNumber()."\t0\t$strand\n"}
-	else {return "$chr\t".($self->getEndG()-$offset-1)."\t".($self->getStartG()+$offset)."\t".$self->getGeneName().":".$self->getNM().'-'.$self->getNumber()."\t0\t$strand\n"}
+	my ($self, $genome, $chr, $strand, $offset) = @_;
+	my ($start_g, $end_g) = ($self->getStartG(), $self->getEndG());
+	if ($genome eq 'hg38') {($start_g, $end_g) = ($self->getStartG38(), $self->getEndG38())}
+	if ($strand eq '+') {return "$chr\t".($start_g-$offset-1)."\t".($end_g+$offset)."\t".$self->getGeneName().":".$self->getNM().'-'.$self->getNumber()."\t0\t$strand\n"}
+	else {return "$chr\t".($end_g-$offset-1)."\t".($start_g+$offset)."\t".$self->getGeneName().":".$self->getNM().'-'.$self->getNumber()."\t0\t$strand\n"}
+	# if ($strand eq '+') {return "$chr\t".($self->getStartG()-$offset-1)."\t".($self->getEndG()+$offset)."\t".$self->getGeneName().":".$self->getNM().'-'.$self->getNumber()."\t0\t$strand\n"}
+	# else {return "$chr\t".($self->getEndG()-$offset-1)."\t".($self->getStartG()+$offset)."\t".$self->getGeneName().":".$self->getNM().'-'.$self->getNumber()."\t0\t$strand\n"}
 }
 
 sub toSQL {
