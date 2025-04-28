@@ -86,7 +86,7 @@ sub toSQL {
 		$sql = "INSERT INTO segment (genome_version, gene_name, type, number, segment_size, segment_start, segment_end, exon_frame) VALUES ('".$genome."','{\"".$self->getGeneName()."\",\"".$self->getNM()."\"}','".$self->getType()."','".$self->getNumber()."','".$self->getSize()."','".$start_g."','".$end_g."',$exon_frame);\n"
 	}
 	elsif ($system eq 'u2') {
-		$sql = "INSERT INTO segment (nom_gene, type, numero, taille, nom, start_g, end_g, start_g_38, end_g_38, exon_frame) VALUES ('{\"".$self->getGeneName()."\",\"".$self->getNM()."\"}','".$self->getType()."','".$self->getNumber()."','".$self->getSize()."','".$self->getName()."','".$self->getStartG()."','".$self->getEndG()."','".$self->getStartG38()."','".$self->getEndG38()."',$exon_frame);\n"
+		$sql = "INSERT INTO segment (refseq, type, numero, taille, nom, start_g, end_g, start_g_38, end_g_38, exon_frame) VALUES ('".$self->getNM()."','".$self->getType()."','".$self->getNumber()."','".$self->getSize()."','".$self->getName()."','".$self->getStartG()."','".$self->getEndG()."','".$self->getStartG38()."','".$self->getEndG38()."',$exon_frame);\n"
 	}
 	$sql =~ s/'NULL'/NULL/og;
 	$sql =~ s/'zero'/'0'/og;

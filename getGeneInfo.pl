@@ -27,7 +27,7 @@ $Getopt::Std::STANDARD_HELP_VERSION = 1;
 #	-and UNIPROT for port name, size...
 #######
 
-my ($MART, $REFGENE, $HGNC_FILE, $LIFTOVER, $LIFTOVER_CHAIN);
+my ($MART, $REFGENE, $HGNC_FILE); #, $LIFTOVER, $LIFTOVER_CHAIN);
 
 if (-f 'data/mart_export.txt') {
 	$MART = "data/mart_export.txt"; #http://www.ensembl.org/biomart/martview/ format: Gene stable ID	Transcript stable ID	Gene name	RefSeq mRNA ID	Protein stable ID	HGNC ID	UniProtKB Gene Name ID
@@ -37,11 +37,11 @@ if (-f 'data/LRG_RefSeqGene.txt') {
 	$REFGENE = "data/LRG_RefSeqGene.txt"; #dowloaded from 	ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/RefSeqGene/LRG_RefSeqGene
 }
 if (-f 'data/HGNC_full_06_2020.txt') {
-	$HGNC_FILE = "data/HGNC_full_06_2020.txt"; #downloaded from http://www.genenames.org/cgi-bin/statistics
+	$HGNC_FILE = "data/HGNC_coding.txt"; #downloaded from http://www.genenames.org/cgi-bin/statistics
 }
 else {die 'no refSeq file, you should download ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/RefSeqGene/LRG_RefSeqGene'}
-if (-f 'liftover/liftOver') {$LIFTOVER = 'liftover/liftOver'}
-else {die 'no liftover binary, you should download one for your system at UCSC http://hgdownload.soe.ucsc.edu/admin/exe/'}
+# if (-f 'liftover/liftOver') {$LIFTOVER = 'liftover/liftOver'}
+# else {die 'no liftover binary, you should download one for your system at UCSC http://hgdownload.soe.ucsc.edu/admin/exe/'}
 if (! -d 'results') {mkdir('results', '0755')}
 if (! -d 'tmp') {mkdir('tmp', '0755')}
 
@@ -65,14 +65,14 @@ if ($opts{'l'}) {($filename, $path) = fileparse($opts{'l'}, qr/\.[^.]*/)}
 #elsif ($opts{'l'} =~ /^([^\/]+)\.txt$/o) {$list = $1; $path = $list}
 if ($opts{'g'} =~ /hg(19|38)/) {$genome = "hg$1"}
 
-if ($genome eq 'hg19') {
-	if (-f 'liftover/hg19ToHg38.over.chain.gz') {$LIFTOVER_CHAIN = 'liftover/hg19ToHg38.over.chain.gz'}
-	else {die 'no liftover hg19238 chain, you should download one at UCSC http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz'}
-}
-if ($genome eq 'hg38') {
-	if (-f 'liftover/hg38ToHg19.over.chain.gz') {$LIFTOVER_CHAIN = 'liftover/hg38ToHg19.over.chain.gz'}
-	else {die 'no liftover hg38219 chain, you should download one at UCSC http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg38ToHg19.over.chain.gz'}
-}
+# if ($genome eq 'hg19') {
+# 	if (-f 'liftover/hg19ToHg38.over.chain.gz') {$LIFTOVER_CHAIN = 'liftover/hg19ToHg38.over.chain.gz'}
+# 	else {die 'no liftover hg19238 chain, you should download one at UCSC http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz'}
+# }
+# if ($genome eq 'hg38') {
+# 	if (-f 'liftover/hg38ToHg19.over.chain.gz') {$LIFTOVER_CHAIN = 'liftover/hg38ToHg19.over.chain.gz'}
+# 	else {die 'no liftover hg38219 chain, you should download one at UCSC http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg38ToHg19.over.chain.gz'}
+# }
 
 if ($opts{'o'} && $opts{'o'} =~ /(\d+)/o) {$offset = $1}
 else {$offset = 0}
@@ -436,11 +436,25 @@ sub populate {
 										#elsif ($genome eq 'hg38') {$prev = $segment_exon1->getEndG38()}
 										#liftover $segment_exon1 if hg19
 										if ($genome eq 'hg19') {
-											&pyliftover($transcript->getChr(),$segment_exon1->getStartG(), $segment_exon1->getEndG(), $strand, $segment_exon1);
+											# my $begin_time = time();
+											# &pyliftover($transcript->getChr(),$segment_exon1->getStartG(), $segment_exon1->getEndG(), $segment_exon1);
+											# my $end_time = time();
+											# printf("pyliftover:%.2f\n", $end_time - $begin_time); 
+											# $begin_time = time();
+											&cliftover($transcript->getChr(),$segment_exon1->getStartG(), $segment_exon1->getEndG(), $segment_exon1);
+											# $end_time = time();
+											# printf("cliftover:%.2f\n", $end_time - $begin_time); 
 											$prev = $segment_exon1->getEndG();
 										}
 										elsif ($genome eq 'hg38') {
-											&pyliftover($transcript->getChr(),$segment_exon1->getStartG38(), $segment_exon1->getEndG38(), $strand, $segment_exon1);
+											# my $begin_time = time();
+											# &pyliftover($transcript->getChr(),$segment_exon1->getStartG38(), $segment_exon1->getEndG38(), $segment_exon1);
+											# my $end_time = time();
+											# printf("pyliftover:%.2f\n", $end_time - $begin_time); 
+											# $begin_time = time();
+											&cliftover($transcript->getChr(),$segment_exon1->getStartG38(), $segment_exon1->getEndG38(), $segment_exon1);
+											# $end_time = time();
+											# printf("cliftover:%.2f\n", $end_time - $begin_time); 
 											$prev = $segment_exon1->getEndG38()
 										}
 										push @segments, $segment_exon1;
@@ -519,11 +533,25 @@ sub populate {
 										}
 										#liftover $segment_intron
 										if ($genome eq 'hg19') {
-											&pyliftover($transcript->getChr(),$segment_intron->getStartG(), $segment_intron->getEndG(), $strand, $segment_intron);
+											# my $begin_time = time();
+											# &pyliftover($transcript->getChr(),$segment_intron->getStartG(), $segment_intron->getEndG(), $segment_intron);
+											# my $end_time = time();
+											# printf("pyliftover:%.2f\n", $end_time - $begin_time); 
+											# $begin_time = time();
+											&cliftover($transcript->getChr(),$segment_intron->getStartG(), $segment_intron->getEndG(), $segment_intron);
+											# $end_time = time();
+											# printf("cliftover:%.2f\n", $end_time - $begin_time); 
 											$prev = $segment->getEndG();
 										}
 										elsif ($genome eq 'hg38') {
-											&pyliftover($transcript->getChr(),$segment_intron->getStartG38(), $segment_intron->getEndG38(), $strand, $segment_intron);
+											# my $begin_time = time();
+											# &pyliftover($transcript->getChr(),$segment_intron->getStartG38(), $segment_intron->getEndG38(), $segment_intron);
+											# my $end_time = time();
+											# printf("pyliftover:%.2f\n", $end_time - $begin_time); 
+											# $begin_time = time();
+											&cliftover($transcript->getChr(),$segment_intron->getStartG38(), $segment_intron->getEndG38(), $segment_intron);
+											# $end_time = time();
+											# printf("cliftover:%.2f\n", $end_time - $begin_time); 
 											$prev = $segment->getEndG38();
 										}
 
@@ -531,8 +559,26 @@ sub populate {
 										push @segments, $segment;
 									}
 									#liftover $segment
-									if ($genome eq 'hg19') {&pyliftover($transcript->getChr(),$segment->getStartG(), $segment->getEndG(), $strand, $segment)}
-									if ($genome eq 'hg38') {&pyliftover($transcript->getChr(),$segment->getStartG38(), $segment->getEndG38(), $strand, $segment)}
+									if ($genome eq 'hg19') {
+										# my $begin_time = time();
+										# &pyliftover($transcript->getChr(),$segment->getStartG(), $segment->getEndG(), $segment);
+										# my $end_time = time();
+										# printf("pyliftover:%.2f\n", $end_time - $begin_time); 
+										# $begin_time = time();
+										&cliftover($transcript->getChr(),$segment->getStartG(), $segment->getEndG(), $segment);
+										# $end_time = time();
+										# printf("cliftover:%.2f\n", $end_time - $begin_time); 
+									}
+									if ($genome eq 'hg38') {
+										# my $begin_time = time();
+										# &pyliftover($transcript->getChr(),$segment->getStartG38(), $segment->getEndG38(), $segment);
+										# my $end_time = time();
+										# printf("pyliftover:%.2f\n", $end_time - $begin_time); 
+										# $begin_time = time();
+										&cliftover($transcript->getChr(),$segment->getStartG38(), $segment->getEndG38(), $segment);
+										# $end_time = time();
+										# printf("cliftover:%.2f\n", $end_time - $begin_time); 
+									}
 								}
 								#print "$segments[0]\n";
 								$segment_hash{"$gene_name-$togows_nm"} = \@segments;
@@ -656,68 +702,108 @@ sub error {
 	close E;
 }
 
-sub liftover {
-	my ($chr, $pos1, $pos2, $strand, $segment) = @_;
-	#not optimized as liftover is ran (and files created) each time a segment is achieved - would be more efficient to run it once in the end, but would also be more error prone, and as the script is meant to run only sometimes...
-	#print input file
-	my $bed = "$chr\t$pos1\t$pos2\n";
-	if ($strand eq '-') {$bed = "$chr\t$pos2\t$pos1\n";}
-	open(S, '>tmp/input.bed') or die $!;
-        print S $bed;
-        close S;
-	#liftover
-	system "$LIFTOVER tmp/input.bed $LIFTOVER_CHAIN tmp/output.bed  tmp/unmapped.bed &>/dev/null";
-	open(T, 'tmp/output.bed') or print "Conversion pb with $bed\n";
-	while (my $line = <T>) {
-		if ($line =~ /chr[0-9XY]{1,2}\t(\d+)\t(\d+)$/o) {
-			if ($strand eq '+') {
-				if ($genome eq 'hg19') {
-					$segment->setStartG38($1);
-					$segment->setEndG38($2);
-				}
-				elsif ($genome eq 'hg38') {
-					$segment->setStartG($1);
-					$segment->setEndG($2);
-				}
-			}
-			else {
-				if ($genome eq 'hg19') {
-					$segment->setStartG38($2);
-					$segment->setEndG38($1);
-				}
-				elsif ($genome eq 'hg38') {
-					$segment->setStartG($2);
-					$segment->setEndG($1);
-				}
-			}
-		}
-	}
-	close T;
-}
+# sub liftover {
+# 	my ($chr, $pos1, $pos2, $strand, $segment) = @_;
+# 	#not optimized as liftover is ran (and files created) each time a segment is achieved - would be more efficient to run it once in the end, but would also be more error prone, and as the script is meant to run only sometimes...
+# 	#print input file
+# 	my $bed = "$chr\t$pos1\t$pos2\n";
+# 	if ($strand eq '-') {$bed = "$chr\t$pos2\t$pos1\n";}
+# 	open(S, '>tmp/input.bed') or die $!;
+#         print S $bed;
+#         close S;
+# 	#liftover
+# 	system "$LIFTOVER tmp/input.bed $LIFTOVER_CHAIN tmp/output.bed  tmp/unmapped.bed &>/dev/null";
+# 	open(T, 'tmp/output.bed') or print "Conversion pb with $bed\n";
+# 	while (my $line = <T>) {
+# 		if ($line =~ /chr[0-9XY]{1,2}\t(\d+)\t(\d+)$/o) {
+# 			if ($strand eq '+') {
+# 				if ($genome eq 'hg19') {
+# 					$segment->setStartG38($1);
+# 					$segment->setEndG38($2);
+# 				}
+# 				elsif ($genome eq 'hg38') {
+# 					$segment->setStartG($1);
+# 					$segment->setEndG($2);
+# 				}
+# 			}
+# 			else {
+# 				if ($genome eq 'hg19') {
+# 					$segment->setStartG38($2);
+# 					$segment->setEndG38($1);
+# 				}
+# 				elsif ($genome eq 'hg38') {
+# 					$segment->setStartG($2);
+# 					$segment->setEndG($1);
+# 				}
+# 			}
+# 		}
+# 	}
+# 	close T;
+# }
 
-sub pyliftover {
-	my ($chr, $pos1, $pos2, $strand, $segment) = @_;
+# sub pyliftover {
+# 	my ($chr, $pos1, $pos2, $segment) = @_;
+# 	$pos1 = $pos1-1;
+# 	$pos2 = $pos2-1;
+# 	if ($chr =~ /^([\dXYM]{1,2})$/o) {$chr = "chr$1"}
+# 	#my $ret =  or die "hg38 gene mutalyzer gene only and $!";
+# 	#print STDERR "/usr/local/bin/python $path/liftover$way.py chr$chr $pos";
+# 	#my $way = 'hg38ToHg19.over.chain.gz';
+# 	#if ($genome eq 'hg19') {$way = 'hg19ToHg38.over.chain.gz'}
+# 	my ($s, $e, $chr_tmp);
+# 	my $genome2 = 'hg19';
+# 	if ($genome eq 'hg19') {$genome2 = 'hg38'}
+# 	($chr_tmp, $s) = split(/,/, `python liftover/pliftover.py $LIFTOVER_CHAIN $chr $pos1`);
+# 	$chr_tmp =~ s/\[//g;
+# 	$chr_tmp =~ s/\(//g;
+# 	$chr_tmp =~ s/'//g;
+# 	$s =~ s/\)//g;
+# 	$s =~ s/ //g;
+# 	$s =~ s/'//g;
+# 	if ($s =~ /^\d+$/o) {$s = $s+1}
+# 	print "pyliftover-$chr_tmp:$genome:$pos1-$genome2:$s-\n";
+# 	($chr_tmp, $e) = split(/,/, `python liftover/pliftover.py $LIFTOVER_CHAIN $chr $pos2`);
+# 	$chr_tmp =~ s/\[//g;
+# 	$chr_tmp =~ s/\(//g;
+# 	$chr_tmp =~ s/'//g;
+# 	$e =~ s/\)//g;
+# 	$e =~ s/ //g;
+# 	$e =~ s/'//g;
+# 	if ($e =~ /^\d+$/o) {$e = $e+1}
+# 	print "pyliftover-$chr_tmp:$genome:$pos2-$genome2:$e-\n";
+# 	if ($genome eq 'hg19') {
+# 		$segment->setStartG38($s);
+# 		$segment->setEndG38($e);
+# 	}
+# 	elsif ($genome eq 'hg38') {
+# 		$segment->setStartG($s);
+# 		$segment->setEndG($e);
+# 	}
+# }
+
+
+sub cliftover {
+	my ($chr, $pos1, $pos2, $segment) = @_;
 	$pos1 = $pos1-1;
 	$pos2 = $pos2-1;
 	if ($chr =~ /^([\dXYM]{1,2})$/o) {$chr = "chr$1"}
-	#my $ret =  or die "hg38 gene mutalyzer gene only and $!";
-	#print STDERR "/usr/local/bin/python $path/liftover$way.py chr$chr $pos";
-	#my $way = 'hg38ToHg19.over.chain.gz';
-	#if ($genome eq 'hg19') {$way = 'hg19ToHg38.over.chain.gz'}
-	my ($s, $e, $chr_tmp);
-	($chr_tmp, $s) = split(/,/, `python liftover/liftover.py $LIFTOVER_CHAIN $chr $pos1`);
-	$s =~ s/\)//g;
+	my $genome2 = 'hg19';
+	if ($genome eq 'hg19') {$genome2 = 'hg38'}
+	my ($s, $e, $chr_tmp, $strand);
+	($chr_tmp, $s, $strand) = split(/,/, `python liftover/cliftover.py $genome $genome2 $chr $pos1`);
+	# $chr_tmp =~ s/\[//g;
+	# $chr_tmp =~ s/\(//g;
+	# $chr_tmp =~ s/'//g;
 	$s =~ s/ //g;
-	$s =~ s/'//g;
-	#print "-$pos1-$s-\n";
-	if ($s =~ /^\d+$/o) {$s = $s+1}
-	($chr_tmp, $e) = split(/,/, `python liftover/liftover.py $LIFTOVER_CHAIN $chr $pos2`);
-	$e =~ s/\)//g;
+	# print "cliftover-$chr_tmp:$genome:$pos1-$genome2:$s-\n";
+	# if ($s =~ /^\d+$/o) {$s = $s+1}
+	($chr_tmp, $e, $strand) = split(/,/, `python liftover/cliftover.py $genome $genome2 $chr $pos2`);
+	# $chr_tmp =~ s/\[//g;
+	# $chr_tmp =~ s/\(//g;
+	# $chr_tmp =~ s/'//g;
 	$e =~ s/ //g;
-	$e =~ s/'//g;
-	#print "-$pos2-$e-\n";
-	if ($e =~ /^\d+$/o) {$e = $e+1}
-	#if ($strand eq '+') {
+	# print "cliftover-$chr_tmp:$genome:$pos2-$genome2:$e-\n";
+	# if ($e =~ /^\d+$/o) {$e = $e+1}
 	if ($genome eq 'hg19') {
 		$segment->setStartG38($s);
 		$segment->setEndG38($e);
@@ -726,16 +812,175 @@ sub pyliftover {
 		$segment->setStartG($s);
 		$segment->setEndG($e);
 	}
-	#}
-	#else {
-	#	if ($genome eq 'hg19') {
-	#		$segment->setStartG38($e);
-	#		$segment->setEndG38($s);
-	#	}
-	#	elsif ($genome eq 'hg38') {
-	#		$segment->setStartG($e);
-	#		$segment->setEndG($s);
-	#	}
-	#}
-
 }
+
+# validation cliftover: TMEM231
+
+# pyliftover-chr16:hg38:75556251-hg19:75590149-
+# pyliftover-chr16:hg38:75556070-hg19:75589968-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75556251-hg19:75590149- 
+# cliftover-chr16:hg38:75556070-hg19:75589968- 
+# cliftover:1.00
+# pyliftover-chr16:hg38:75558252-hg19:75592150-
+# pyliftover-chr16:hg38:75556252-hg19:75590150-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75558252-hg19:75592150-                                                
+# cliftover-chr16:hg38:75556252-hg19:75590150-                                                
+# cliftover:1.00
+# pyliftover-chr16:hg38:75556069-hg19:75589967-
+# pyliftover-chr16:hg38:75555973-hg19:75589871-
+# pyliftover:8.00
+# cliftover-chr16:hg38:75556069-hg19:75589967-
+# cliftover-chr16:hg38:75555973-hg19:75589871-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75555972-hg19:75589870-
+# pyliftover-chr16:hg38:75555803-hg19:75589701-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75555972-hg19:75589870-
+# cliftover-chr16:hg38:75555803-hg19:75589701-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75555802-hg19:75589700-
+# pyliftover-chr16:hg38:75545954-hg19:75579852-
+# pyliftover:8.00
+# cliftover-chr16:hg38:75555802-hg19:75589700-
+# cliftover-chr16:hg38:75545954-hg19:75579852-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75545953-hg19:75579851-
+# pyliftover-chr16:hg38:75545825-hg19:75579723-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75545953-hg19:75579851-
+# cliftover-chr16:hg38:75545825-hg19:75579723-
+# cliftover:0.00
+# pyliftover-chr16:hg38:75545824-hg19:75579722-
+# pyliftover-chr16:hg38:75545495-hg19:75579393-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75545824-hg19:75579722-
+# cliftover-chr16:hg38:75545495-hg19:75579393-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75545494-hg19:75579392-
+# pyliftover-chr16:hg38:75545351-hg19:75579249-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75545494-hg19:75579392-
+# cliftover-chr16:hg38:75545351-hg19:75579249-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75545350-hg19:75579248-
+# pyliftover-chr16:hg38:75542683-hg19:75576581-
+# pyliftover:8.00
+# cliftover-chr16:hg38:75545350-hg19:75579248-
+# cliftover-chr16:hg38:75542683-hg19:75576581-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75542682-hg19:75576580-
+# pyliftover-chr16:hg38:75542601-hg19:75576499-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75542682-hg19:75576580-
+# cliftover-chr16:hg38:75542601-hg19:75576499-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75542600-hg19:75576498-
+# pyliftover-chr16:hg38:75541455-hg19:75575353-
+# pyliftover:8.00
+# cliftover-chr16:hg38:75542600-hg19:75576498-
+# cliftover-chr16:hg38:75541455-hg19:75575353-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75541454-hg19:75575352-
+# pyliftover-chr16:hg38:75541349-hg19:75575247-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75541454-hg19:75575352-
+# cliftover-chr16:hg38:75541349-hg19:75575247-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75541348-hg19:75575246-
+# pyliftover-chr16:hg38:75540174-hg19:75574072-
+# pyliftover:8.00
+# cliftover-chr16:hg38:75541348-hg19:75575246-
+# cliftover-chr16:hg38:75540174-hg19:75574072-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75540173-hg19:75574071-
+# pyliftover-chr16:hg38:75536740-hg19:75570638-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75540173-hg19:75574071-
+# cliftover-chr16:hg38:75536740-hg19:75570638-
+# cliftover:0.00
+# pyliftover-chr16:hg38:75536739-hg19:75570637-
+# pyliftover-chr16:hg38:75534739-hg19:75568637-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75536739-hg19:75570637-
+# cliftover-chr16:hg38:75534739-hg19:75568637-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75556285-hg19:75590183-
+# pyliftover-chr16:hg38:75555803-hg19:75589701-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75556285-hg19:75590183-
+# cliftover-chr16:hg38:75555803-hg19:75589701-
+# cliftover:0.00
+# pyliftover-chr16:hg38:75558286-hg19:75592184-
+# pyliftover-chr16:hg38:75556286-hg19:75590184-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75558286-hg19:75592184-
+# cliftover-chr16:hg38:75556286-hg19:75590184-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75555802-hg19:75589700-
+# pyliftover-chr16:hg38:75545954-hg19:75579852-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75555802-hg19:75589700-
+# cliftover-chr16:hg38:75545954-hg19:75579852-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75545953-hg19:75579851-
+# pyliftover-chr16:hg38:75545825-hg19:75579723-
+# pyliftover:8.00
+# cliftover-chr16:hg38:75545953-hg19:75579851-
+# cliftover-chr16:hg38:75545825-hg19:75579723-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75545824-hg19:75579722-
+# pyliftover-chr16:hg38:75545495-hg19:75579393-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75545824-hg19:75579722-
+# cliftover-chr16:hg38:75545495-hg19:75579393-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75545494-hg19:75579392-
+# pyliftover-chr16:hg38:75545351-hg19:75579249-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75545494-hg19:75579392-
+# cliftover-chr16:hg38:75545351-hg19:75579249-
+# cliftover:0.00
+# pyliftover-chr16:hg38:75545350-hg19:75579248-
+# pyliftover-chr16:hg38:75542683-hg19:75576581-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75545350-hg19:75579248-
+# cliftover-chr16:hg38:75542683-hg19:75576581-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75542682-hg19:75576580-
+# pyliftover-chr16:hg38:75542601-hg19:75576499-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75542682-hg19:75576580-
+# cliftover-chr16:hg38:75542601-hg19:75576499-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75542600-hg19:75576498-
+# pyliftover-chr16:hg38:75541455-hg19:75575353-
+# pyliftover:8.00
+# cliftover-chr16:hg38:75542600-hg19:75576498-
+# cliftover-chr16:hg38:75541455-hg19:75575353-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75541454-hg19:75575352-
+# pyliftover-chr16:hg38:75541349-hg19:75575247-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75541454-hg19:75575352-
+# cliftover-chr16:hg38:75541349-hg19:75575247-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75541348-hg19:75575246-
+# pyliftover-chr16:hg38:75540174-hg19:75574072-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75541348-hg19:75575246-
+# cliftover-chr16:hg38:75540174-hg19:75574072-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75540173-hg19:75574071-
+# pyliftover-chr16:hg38:75538116-hg19:75572014-
+# pyliftover:8.00
+# cliftover-chr16:hg38:75540173-hg19:75574071-
+# cliftover-chr16:hg38:75538116-hg19:75572014-
+# cliftover:1.00
+# pyliftover-chr16:hg38:75538115-hg19:75572013-
+# pyliftover-chr16:hg38:75536115-hg19:75570013-
+# pyliftover:9.00
+# cliftover-chr16:hg38:75538115-hg19:75572013-
+# cliftover-chr16:hg38:75536115-hg19:75570013-
+# cliftover:1.00
