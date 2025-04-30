@@ -33,13 +33,14 @@ if (-f 'data/mart_export.txt') {
 	$MART = "data/mart_export.txt"; #http://www.ensembl.org/biomart/martview/ format: Gene stable ID	Transcript stable ID	Gene name	RefSeq mRNA ID	Protein stable ID	HGNC ID	UniProtKB Gene Name ID
 }
 else {die 'no MART file, you should download a biomart file with ENST, ENSP, HGNCid, RefSeq NM, UNIPROT'}
-if (-f 'data/LRG_RefSeqGene.txt') {
-	$REFGENE = "data/LRG_RefSeqGene.txt"; #dowloaded from 	ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/RefSeqGene/LRG_RefSeqGene
-}
-if (-f 'data/HGNC_full_06_2020.txt') {
-	$HGNC_FILE = "data/HGNC_coding.txt"; #downloaded from http://www.genenames.org/cgi-bin/statistics
+if (-f 'data/LRG_RefSeq_Gene.txt') {
+	$REFGENE = "data/LRG_RefSeq_Gene.txt"; #dowloaded from 	ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/RefSeqGene/LRG_RefSeqGene
 }
 else {die 'no refSeq file, you should download ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/RefSeqGene/LRG_RefSeqGene'}
+if (-f 'data/HGNC_coding.txt') {
+	$HGNC_FILE = "data/HGNC_coding.txt"; #downloaded from http://www.genenames.org/cgi-bin/statistics
+}
+else {die 'no HGNC file, you should download ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/RefSeqGene/LRG_RefSeqGene'}
 # if (-f 'liftover/liftOver') {$LIFTOVER = 'liftover/liftOver'}
 # else {die 'no liftover binary, you should download one for your system at UCSC http://hgdownload.soe.ucsc.edu/admin/exe/'}
 if (! -d 'results') {mkdir('results', '0755')}
@@ -153,23 +154,26 @@ sub populate {
 							if ($content[$hgnc] =~ /HGNC:(\d+)/o) {
 								$transcript->setHGNC($1);
 								my @hgnc_data = split(/\t/, `grep "$content[$hgnc]" $HGNC_FILE`);
-								if ($hgnc_data[8]) {
-									$hgnc_data[8] =~ s/"//g;
-									if ($hgnc_data[8] =~ /([\w-]+)|/o) {$hgnc_data[8] = $1}
-									#print $hgnc_data[8];
-									if (length $hgnc_data[8] < 21) {$transcript->setSecondName($hgnc_data[8])}
-									else {$transcript->setSecondName(substr($hgnc_data[8], 0, 20))}
+								if ($hgnc_data[5]) {
+									$hgnc_data[5] =~ s/"//g;
+									if ($hgnc_data[5] =~ /([\w,-]+)|/o) {$hgnc_data[5] = $1}
+									#print $hgnc_data[5];
+									if (length $hgnc_data[5] < 21) {$transcript->setSecondName($hgnc_data[5])}
+									else {$transcript->setSecondName(substr($hgnc_data[5], 0, 20))}
 								}
 								#first occurence of Uniprot ID - is also checked in mart export
-								if ($hgnc_data[25] =~ /([\w]{6})$/o) {$transcript->setUniprot($1)}
+								if ($hgnc_data[8] =~ /([\w]{6})$/o) {$transcript->setUniprot($1)}
 							}
 						}
 						$transcript->setGeneName($content[$name]);
 
 						#if ($content[$uniprot] && $content[$uniprot] ne '') {
+						# print STDERR "\nUNIPROT HEADER ID: $uniprot\n";
+						# print STDERR "UNIPROT ID: $content[$uniprot]\n";
 						if ($content[$uniprot] && length($content[$uniprot]) == 6 || $transcript->getUniprot() ne '') {#swissprot only
 							#print "$content[$uniprot]\n";
-							if ($transcript->getUniprot() eq '') {$transcript->setUniprot($content[$uniprot])}
+							if (!defined $transcript->getUniprot()) {$transcript->setUniprot($content[$uniprot])}
+							# print STDERR "getUniprot: ".$transcript->getUniprot()."\n";
 							#get info from UNIPROT and create domain objs
 							#my $response = $ua->get('http://www.uniprot.org/uniprot/'.$transcript->getUniprot().'.txt');
 
@@ -787,9 +791,13 @@ sub cliftover {
 	$pos1 = $pos1-1;
 	$pos2 = $pos2-1;
 	if ($chr =~ /^([\dXYM]{1,2})$/o) {$chr = "chr$1"}
-	my $genome2 = 'hg19';
-	if ($genome eq 'hg19') {$genome2 = 'hg38'}
+	# my $genome2 = 'hg19';
+	# if ($genome eq 'hg19') {$genome2 = 'hg38'}
+	my $genome2 = $genome eq 'hg19' ? 'hg38' : 'hg19';
 	my ($s, $e, $chr_tmp, $strand);
+	# my $PYTHON="python";
+	# print STDERR "$genome $genome2 $chr $pos1 $pos2\n";
+
 	($chr_tmp, $s, $strand) = split(/,/, `python liftover/cliftover.py $genome $genome2 $chr $pos1`);
 	# $chr_tmp =~ s/\[//g;
 	# $chr_tmp =~ s/\(//g;
